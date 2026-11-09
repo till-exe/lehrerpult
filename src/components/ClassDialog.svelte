@@ -32,7 +32,7 @@
 
 {#if confirmDelete}
   <Modal title="Klasse {klass.name} löschen?" {onclose}>
-    <p>Die Klasse und alle {studentsOf(klass.id).length} Schüler werden gelöscht.</p>
+    <p>Die Klasse wird mit allen {studentsOf(klass.id).length} Schülern, mündlichen Noten, Terminen und Stundenplan-Einträgen gelöscht.</p>
     <p class="muted">Über die Sicherungen in den Einstellungen lässt sich das rückgängig machen.</p>
     {#snippet actions()}
       <button class="btn ghost" onclick={() => (confirmDelete = false)}>Abbrechen</button>

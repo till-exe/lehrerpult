@@ -36,6 +36,9 @@ export function updateClass(id, patch) {
 export function deleteClass(id) {
   app.data.classes = app.data.classes.filter((c) => c.id !== id);
   app.data.students = app.data.students.filter((s) => s.classId !== id);
+  app.data.oral = app.data.oral.filter((o) => o.classId !== id);
+  app.data.exams = app.data.exams.filter((x) => x.classId !== id);
+  app.data.timetable = app.data.timetable.filter((e) => e.classId !== id);
   if (app.data.settings.classId === id) app.data.settings.classId = sortedClasses()[0]?.id ?? null;
 }
 
@@ -66,4 +69,5 @@ export function updateStudent(id, patch) {
 
 export function removeStudent(id) {
   app.data.students = app.data.students.filter((s) => s.id !== id);
+  app.data.oral = app.data.oral.filter((o) => o.studentId !== id);
 }

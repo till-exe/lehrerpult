@@ -8,6 +8,11 @@
   import Lock from './screens/Lock.svelte';
   import Start from './pages/Start.svelte';
   import Klasse from './pages/Klasse.svelte';
+  import Muendlich from './pages/Muendlich.svelte';
+  import Leistungsnachweise from './pages/Leistungsnachweise.svelte';
+  import Stundenplan from './pages/Stundenplan.svelte';
+
+  const VIEWS = { start: Start, klasse: Klasse, muendlich: Muendlich, leistungsnachweise: Leistungsnachweise, stundenplan: Stundenplan, einstellungen: Settings };
   import Settings from './pages/Settings.svelte';
   import Placeholder from './pages/Placeholder.svelte';
 
@@ -60,12 +65,9 @@
   <div class="shell">
     <Sidebar />
     <main>
-      {#if app.page === 'start'}
-        <Start />
-      {:else if app.page === 'klasse'}
-        <Klasse />
-      {:else if app.page === 'einstellungen'}
-        <Settings />
+      {#if VIEWS[app.page]}
+        {@const View = VIEWS[app.page]}
+        <View />
       {:else if current}
         {#key current.id}
           <Placeholder page={current} />
