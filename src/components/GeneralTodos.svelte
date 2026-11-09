@@ -28,7 +28,7 @@
       </li>
     {/each}
   </ul>
-  <input class="add" type="text" placeholder="+ To-do (Enter)" bind:value={draft} onkeydown={add} />
+  <input class="add" type="text" placeholder="+ To-do" bind:value={draft} onkeydown={add} />
   {#if done.length}
     <button class="link small toggle" onclick={() => (showDone = !showDone)}>
       {showDone ? 'Erledigte ausblenden' : `Erledigt (${done.length})`}

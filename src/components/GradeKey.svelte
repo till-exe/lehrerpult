@@ -60,7 +60,7 @@
     </table>
     <label class="field check">Punkte prüfen
       <span class="probe">
-        <input type="number" min="0" step="0.5" bind:value={points} placeholder="z. B. 31,5" />
+        <input type="number" min="0" step="0.5" bind:value={points} />
         {#if result}<span>ergibt Note <strong>{result}</strong></span>{/if}
       </span>
     </label>

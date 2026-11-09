@@ -119,7 +119,7 @@
   {#if Object.keys(drawn).length}<button class="link small" onclick={() => (drawn = {})}>Alle zurück aufs Rad</button>{/if}
 </div>
 {#if source === 'eigene'}
-  <textarea class="custom" rows="3" placeholder="Ein Eintrag pro Zeile, z. B. Themen oder Gruppen" bind:value={app.data.settings.wheelCustom}></textarea>
+  <textarea class="custom" rows="3" placeholder="Ein Eintrag pro Zeile" bind:value={app.data.settings.wheelCustom}></textarea>
 {:else if klass}
   <Absent {students} />
 {/if}

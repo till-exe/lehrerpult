@@ -54,7 +54,7 @@
       </select>
     </label>
     {#if !e.classId}
-      <label class="field">Titel<input type="text" bind:value={e.title} placeholder="z. B. Pausenaufsicht" /></label>
+      <label class="field">Titel<input type="text" bind:value={e.title} /></label>
     {/if}
     <div class="row2">
       <label class="field">Fach<input type="text" bind:value={e.subject} /></label>

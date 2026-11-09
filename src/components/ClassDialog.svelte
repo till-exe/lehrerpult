@@ -42,8 +42,8 @@
 {:else}
   <Modal title={klass ? 'Klasse bearbeiten' : 'Neue Klasse'} {onclose}>
     <form id="class-form" onsubmit={(e) => (e.preventDefault(), save())}>
-      <label class="field">Name<input type="text" bind:value={name} placeholder="z. B. 7a" use:autofocus /></label>
-      <label class="field">Fach (optional)<input type="text" bind:value={subject} placeholder="z. B. Englisch" /></label>
+      <label class="field">Name<input type="text" bind:value={name} use:autofocus /></label>
+      <label class="field">Fach (optional)<input type="text" bind:value={subject} /></label>
       <div class="field">
         Farbe
         <div class="colors">

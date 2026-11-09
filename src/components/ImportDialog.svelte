@@ -23,7 +23,7 @@
 <Modal title="Namensliste einfügen – {klass.name}" {onclose} wide>
   <p class="muted small">Eine Person pro Zeile. Funktioniert mit „Nachname, Vorname“, mit zwei Spalten aus Excel oder mit „Vorname Nachname“.</p>
   <div class="cols">
-    <textarea bind:value={text} rows="14" placeholder={'Müller, Anna\nSchmidt, Jonas\n…'} use:autofocus></textarea>
+    <textarea bind:value={text} rows="14" use:autofocus></textarea>
     <div class="preview">
       <div class="order">
         <label><input type="radio" bind:group={order} value="last-first" /> Nachname zuerst</label>

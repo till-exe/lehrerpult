@@ -91,7 +91,7 @@
 {#if dialog === 'new' || dialog === 'rename'}
   <Modal title={dialog === 'new' ? 'Neue Liste' : 'Liste umbenennen'} onclose={() => (dialog = null)}>
     <form id="list-form" onsubmit={(e) => (e.preventDefault(), dialog === 'new' ? create() : rename())}>
-      <label class="field">Name<input type="text" bind:value={name} placeholder="z. B. Elternbrief zurück" use:autofocus /></label>
+      <label class="field">Name<input type="text" bind:value={name} use:autofocus /></label>
     </form>
     {#snippet actions()}
       <button class="btn ghost" onclick={() => (dialog = null)}>Abbrechen</button>

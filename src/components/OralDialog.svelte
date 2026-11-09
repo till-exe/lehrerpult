@@ -39,7 +39,7 @@
       {/each}
     </div>
     {#if e.kind === 'Frei'}
-      <input type="text" bind:value={e.label} placeholder="Bezeichnung, z. B. Vokabeln" />
+      <input type="text" bind:value={e.label} placeholder="Bezeichnung" />
     {/if}
   </div>
 
@@ -60,7 +60,7 @@
     </div>
   </div>
 
-  <label class="field">Bemerkung<input type="text" bind:value={e.note} placeholder="Eindruck, Thema …" /></label>
+  <label class="field">Bemerkung<input type="text" bind:value={e.note} /></label>
 
   <div class="row">
     <label class="field date">Datum<input type="date" bind:value={e.date} /></label>

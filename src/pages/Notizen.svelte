@@ -4,11 +4,12 @@
   import Heading2 from '@lucide/svelte/icons/heading-2';
   import List from '@lucide/svelte/icons/list';
   import ListChecks from '@lucide/svelte/icons/list-checks';
+  import Highlighter from '@lucide/svelte/icons/highlighter';
   import { tick } from 'svelte';
   import { app } from '../lib/store.svelte.js';
   import { uid, sortedClasses } from '../lib/classes.js';
   import { classOf } from '../lib/timetable.js';
-  import { parseNote, toggleCheck } from '../lib/markup.js';
+  import { parseNote, toggleCheck, inline, toggleMark, lineOffset } from '../lib/markup.js';
   import Modal from '../components/Modal.svelte';
 
   let query = $state('');
@@ -83,6 +84,34 @@
     touch();
   }
 
+  // Ausgewählten Text markieren – im Bearbeiten-Modus und in der Ansicht.
+  async function highlight() {
+    if (editing) {
+      const ta = textarea;
+      const { selectionStart: a, selectionEnd: b } = ta;
+      if (a === b) return;
+      const r = toggleMark(note.body, a, b);
+      note.body = r.text;
+      touch();
+      await tick();
+      ta.focus();
+      ta.setSelectionRange(r.start, r.end);
+      return;
+    }
+    const sel = window.getSelection();
+    const picked = sel?.toString();
+    const block = sel?.anchorNode?.parentElement?.closest('[data-line]');
+    if (!picked || !block || block !== sel.focusNode?.parentElement?.closest('[data-line]')) return;
+    const nr = Number(block.dataset.line);
+    const line = note.body.split('\n')[nr];
+    const i = line.indexOf(picked);
+    if (i < 0) return;
+    const at = lineOffset(note.body, nr) + i;
+    note.body = toggleMark(note.body, at, at + picked.length).text;
+    touch();
+    sel.removeAllRanges();
+  }
+
   function remove() {
     app.data.notes = app.data.notes.filter((n) => n.id !== selectedId);
     selectedId = null;
@@ -136,6 +165,7 @@
           <button class="btn ghost icon" title="Überschrift" onclick={() => insert('## ')}><Heading2 size={18} /></button>
           <button class="btn ghost icon" title="Aufzählung" onclick={() => insert('- ')}><List size={18} /></button>
           <button class="btn ghost icon" title="Checkbox" onclick={() => insert('- [ ] ')}><ListChecks size={18} /></button>
+          <button class="btn ghost icon" title="Ausgewählten Text markieren" onmousedown={(e) => e.preventDefault()} onclick={highlight}><Highlighter size={18} /></button>
         </div>
         <button class="btn" onclick={() => (editing = !editing)}>{editing ? 'Fertig' : 'Bearbeiten'}</button>
         <button class="btn ghost" onclick={() => (confirmDelete = true)}>Löschen</button>
@@ -144,20 +174,21 @@
       <input class="title-input" type="text" placeholder="Titel" bind:value={note.title} oninput={touch} />
 
       {#if editing}
-        <textarea bind:this={textarea} bind:value={note.body} oninput={touch} onkeydown={onKey} placeholder={'Text …\n\n## Überschrift\n- Aufzählung\n- [ ] Aufgabe'}></textarea>
+        <textarea bind:this={textarea} bind:value={note.body} oninput={touch} onkeydown={onKey}></textarea>
       {:else}
         <div class="view" role="presentation" ondblclick={() => (editing = true)}>
+          {#snippet txt(text)}{#each inline(text) as seg}{#if seg.mark}<mark>{seg.t}</mark>{:else}{seg.t}{/if}{/each}{/snippet}
           {#each blocks as b (b.line)}
-            {#if b.type === 'h2'}<h2>{b.text}</h2>
-            {:else if b.type === 'h3'}<h3>{b.text}</h3>
+            {#if b.type === 'h2'}<h2 data-line={b.line}>{@render txt(b.text)}</h2>
+            {:else if b.type === 'h3'}<h3 data-line={b.line}>{@render txt(b.text)}</h3>
             {:else if b.type === 'check'}
               <label class="check" class:done={b.checked}>
                 <input type="checkbox" checked={b.checked} onchange={() => ((note.body = toggleCheck(note.body, b.line)), touch())} />
-                <span>{b.text}</span>
+                <span data-line={b.line}>{@render txt(b.text)}</span>
               </label>
-            {:else if b.type === 'bullet'}<div class="bullet">{b.text}</div>
+            {:else if b.type === 'bullet'}<div class="bullet" data-line={b.line}>{@render txt(b.text)}</div>
             {:else if b.type === 'gap'}<div class="gap"></div>
-            {:else}<p>{b.text}</p>{/if}
+            {:else}<p data-line={b.line}>{@render txt(b.text)}</p>{/if}
           {/each}
           {#if !note.body.trim()}<p class="muted">Leer. Doppelklick zum Schreiben.</p>{/if}
         </div>
@@ -317,5 +348,11 @@
   }
   .gap {
     height: 0.7rem;
+  }
+  mark {
+    background: #fbefb0;
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 0.1em;
   }
 </style>

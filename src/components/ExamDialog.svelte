@@ -33,8 +33,8 @@
         {#each EXAM_TYPES as t}<option>{t}</option>{/each}
       </select>
     </label>
-    <label class="field">Thema<input type="text" bind:value={e.topic} placeholder="z. B. Past Progressive" /></label>
-    <label class="field">Notiz<input type="text" bind:value={e.note} placeholder="z. B. angekündigt am …" /></label>
+    <label class="field">Thema<input type="text" bind:value={e.topic} /></label>
+    <label class="field">Notiz<input type="text" bind:value={e.note} /></label>
     {#if error}<p class="error">{error}</p>{/if}
   </form>
   {#snippet actions()}

@@ -36,7 +36,7 @@
     </div>
     <textarea
       rows="1"
-      placeholder="Kurzbeschreibung: Thema, Material, Hausaufgabe …"
+      placeholder="Kurzbeschreibung"
       value={lesson.note}
       oninput={(e) => setNote(date, index, e.currentTarget.value)}
       use:autosize={lesson.note}
@@ -51,7 +51,7 @@
         {/each}
       </ul>
     {/if}
-    <input class="add" type="text" placeholder="+ To-do (Enter)" bind:value={draft} onkeydown={onTodoKey} />
+    <input class="add" type="text" placeholder="+ To-do" bind:value={draft} onkeydown={onTodoKey} />
   </div>
 </article>
 
