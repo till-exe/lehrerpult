@@ -39,6 +39,9 @@ export function deleteClass(id) {
   app.data.oral = app.data.oral.filter((o) => o.classId !== id);
   app.data.exams = app.data.exams.filter((x) => x.classId !== id);
   app.data.timetable = app.data.timetable.filter((e) => e.classId !== id);
+  app.data.lists = app.data.lists.filter((l) => l.classId !== id);
+  delete app.data.seating[id];
+  for (const n of app.data.notes) if (n.classId === id) n.classId = null;
   if (app.data.settings.classId === id) app.data.settings.classId = sortedClasses()[0]?.id ?? null;
 }
 

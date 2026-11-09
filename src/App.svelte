@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
   import { app, load, changed, flush, lockApp } from './lib/store.svelte.js';
-  import { PAGES } from './lib/pages.js';
   import Sidebar from './components/Sidebar.svelte';
   import Setup from './screens/Setup.svelte';
   import Lock from './screens/Lock.svelte';
@@ -11,10 +10,11 @@
   import Muendlich from './pages/Muendlich.svelte';
   import Leistungsnachweise from './pages/Leistungsnachweise.svelte';
   import Stundenplan from './pages/Stundenplan.svelte';
+  import Unterricht from './pages/Unterricht.svelte';
+  import Notizen from './pages/Notizen.svelte';
 
-  const VIEWS = { start: Start, klasse: Klasse, muendlich: Muendlich, leistungsnachweise: Leistungsnachweise, stundenplan: Stundenplan, einstellungen: Settings };
+  const VIEWS = { start: Start, klasse: Klasse, muendlich: Muendlich, leistungsnachweise: Leistungsnachweise, stundenplan: Stundenplan, unterricht: Unterricht, notizen: Notizen, einstellungen: Settings };
   import Settings from './pages/Settings.svelte';
-  import Placeholder from './pages/Placeholder.svelte';
 
   onMount(async () => {
     const status = await api.status();
@@ -52,7 +52,6 @@
     return () => clearInterval(id);
   });
 
-  const current = $derived(PAGES.find((p) => p.id === app.page));
 </script>
 
 <svelte:window onmousemove={touch} onkeydown={touch} onmousedown={touch} />
@@ -68,10 +67,6 @@
       {#if VIEWS[app.page]}
         {@const View = VIEWS[app.page]}
         <View />
-      {:else if current}
-        {#key current.id}
-          <Placeholder page={current} />
-        {/key}
       {/if}
     </main>
   </div>

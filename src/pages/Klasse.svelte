@@ -9,11 +9,13 @@
   import ClassDialog from '../components/ClassDialog.svelte';
   import ImportDialog from '../components/ImportDialog.svelte';
   import StudentDialog from '../components/StudentDialog.svelte';
+  import Seating from '../components/Seating.svelte';
+  import ClassLists from '../components/ClassLists.svelte';
 
   const TABS = [
     { id: 'schueler', label: 'Schüler' },
-    { id: 'sitzplan', label: 'Sitzplan', step: 7 },
-    { id: 'listen', label: 'Listen', step: 7 },
+    { id: 'sitzplan', label: 'Sitzplan' },
+    { id: 'listen', label: 'Listen' },
   ];
 
   let tab = $state('schueler');
@@ -44,17 +46,17 @@
         <h1>{klass.name}</h1>
         <p class="muted">{[klass.subject, `${students.length} Schüler`].filter(Boolean).join(' · ')}</p>
       </div>
-      <button class="btn ghost icon" aria-label="Klasse bearbeiten" title="Klasse bearbeiten" onclick={() => (dialog = { kind: 'class', klass })}>
+      <button class="btn ghost icon no-print" aria-label="Klasse bearbeiten" title="Klasse bearbeiten" onclick={() => (dialog = { kind: 'class', klass })}>
         <Pencil size={17} />
       </button>
     </div>
-    <div class="tools">
+    <div class="tools no-print">
       <ClassPicker />
       <button class="btn" onclick={() => (dialog = { kind: 'class' })}><Plus size={18} /> Neue Klasse</button>
     </div>
   </header>
 
-  <div class="tabs" role="tablist">
+  <div class="tabs no-print" role="tablist">
     {#each TABS as t}
       <button role="tab" aria-selected={tab === t.id} class:active={tab === t.id} onclick={() => (tab = t.id)}>{t.label}</button>
     {/each}
@@ -85,9 +87,10 @@
         {/each}
       </ol>
     {/if}
+  {:else if tab === 'sitzplan'}
+    {#key klass.id}<Seating {klass} />{/key}
   {:else}
-    {@const t = TABS.find((x) => x.id === tab)}
-    <div class="empty"><p>{t.label} kommt mit Schritt {t.step}.</p></div>
+    {#key klass.id}<ClassLists {klass} />{/key}
   {/if}
 {/if}
 

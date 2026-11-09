@@ -12,21 +12,9 @@ export const PAGES = [
   { id: 'klasse', label: 'Klasse', icon: Users },
   { id: 'muendlich', label: 'Mündlich', icon: MessageSquareText },
   { id: 'leistungsnachweise', label: 'Leistungsnachweise', icon: ClipboardCheck },
-  {
-    id: 'unterricht',
-    label: 'Unterricht',
-    icon: Presentation,
-    step: 8,
-    plan: ['Timer, Glücksrad, Lautstärkemesser, QR-Code, Zufallsauswahl', 'Jedes Werkzeug im Vollbild für den Beamer'],
-  },
+  { id: 'unterricht', label: 'Unterricht', icon: Presentation },
   { id: 'stundenplan', label: 'Stundenplan', icon: CalendarDays },
-  {
-    id: 'notizen',
-    label: 'Notizen',
-    icon: NotebookPen,
-    step: 9,
-    plan: ['Einfache Textseiten mit Überschriften, Listen und Checkboxen', 'Allgemein oder einer Klasse zugeordnet', 'Suche über alle Notizen'],
-  },
+  { id: 'notizen', label: 'Notizen', icon: NotebookPen },
 ];
 
 export const SETTINGS_PAGE = { id: 'einstellungen', label: 'Einstellungen', icon: Settings };

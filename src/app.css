@@ -195,3 +195,17 @@ textarea:focus,
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+@media print {
+  nav,
+  .no-print {
+    display: none !important;
+  }
+  .shell {
+    display: block !important;
+  }
+  main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+}

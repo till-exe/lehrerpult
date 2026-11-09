@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, powerMonitor, safeStorage, dialog, shell, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, powerMonitor, safeStorage, dialog, shell, Menu, session } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { Vault, writeAtomic } = require('./vault.cjs');
@@ -224,6 +224,10 @@ function createWindow() {
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
+  // Mikrofon (Lautstärkemesser) und Vollbild erlauben, sonst nichts.
+  const allowed = new Set(['media', 'fullscreen', 'clipboard-sanitized-write']);
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(allowed.has(permission)));
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => allowed.has(permission));
   createWindow();
 
   // Laptop gesperrt → App sperren.
