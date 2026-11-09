@@ -5,7 +5,7 @@ export const SCHEMA = 1;
 export function emptyData() {
   return {
     schema: SCHEMA,
-    settings: { startPage: 'start' },
+    settings: { startPage: 'start', classId: null },
     classes: [],
     students: [],
     timetable: [],

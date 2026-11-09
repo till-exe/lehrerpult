@@ -7,6 +7,7 @@
   import Setup from './screens/Setup.svelte';
   import Lock from './screens/Lock.svelte';
   import Start from './pages/Start.svelte';
+  import Klasse from './pages/Klasse.svelte';
   import Settings from './pages/Settings.svelte';
   import Placeholder from './pages/Placeholder.svelte';
 
@@ -61,6 +62,8 @@
     <main>
       {#if app.page === 'start'}
         <Start />
+      {:else if app.page === 'klasse'}
+        <Klasse />
       {:else if app.page === 'einstellungen'}
         <Settings />
       {:else if current}

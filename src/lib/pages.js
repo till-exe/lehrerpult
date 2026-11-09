@@ -9,13 +9,7 @@ import Settings from '@lucide/svelte/icons/settings';
 
 export const PAGES = [
   { id: 'start', label: 'Start', icon: House },
-  {
-    id: 'klasse',
-    label: 'Klasse',
-    icon: Users,
-    step: 2,
-    plan: ['Schülerliste mit Bulk-Import aus Excel oder Textliste', 'Schüler ergänzen und streichen', 'Sitzplan und Listen zum Abhaken'],
-  },
+  { id: 'klasse', label: 'Klasse', icon: Users },
   {
     id: 'muendlich',
     label: 'Mündlich',
