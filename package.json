@@ -1,6 +1,6 @@
 {
   "name": "lehrerpult",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Lehrerpult",
   "main": "electron/main.cjs",
   "scripts": {
@@ -39,15 +39,15 @@
       "icon": "build/icon.ico"
     },
     "nsis": {
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "shortcutName": "Lehrerpult",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "deleteAppDataOnUninstall": false,
-      "artifactName": "Lehrerpult-Setup-${version}.exe"
+      "artifactName": "Lehrerpult-Setup-${version}.exe",
+      "runAfterFinish": true
     },
     "publish": null
   }

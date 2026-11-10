@@ -222,7 +222,24 @@ function createWindow() {
   win.on('closed', () => (win = null));
 }
 
+// Nach einem Update: zuerst den bisherigen Stand sichern (die Datei bleibt verschlüsselt).
+function backupBeforeNewVersion() {
+  if (config.lastVersion === app.getVersion()) return;
+  if (vault.exists()) {
+    const dir = path.join(files.backups, 'vor-update');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(files.data, path.join(dir, `lehrerpult-vor-${app.getVersion()}.dat`));
+  }
+  config.lastVersion = app.getVersion();
+  saveConfig();
+}
+
 app.whenReady().then(() => {
+  try {
+    backupBeforeNewVersion();
+  } catch {
+    // Eine fehlgeschlagene Zusatzsicherung darf den Start nicht verhindern.
+  }
   Menu.setApplicationMenu(null);
   // Mikrofon (Lautstärkemesser) und Vollbild erlauben, sonst nichts.
   const allowed = new Set(['media', 'fullscreen', 'clipboard-sanitized-write']);

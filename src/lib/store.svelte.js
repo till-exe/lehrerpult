@@ -15,6 +15,7 @@ export function emptyData() {
     exams: [],
     lists: [],
     seating: {},
+    wheels: [],
     notes: [],
   };
 }
