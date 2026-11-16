@@ -7,7 +7,7 @@
   import { lessonsFor, openFromEarlier, toggleTodo, lessonName, lessonKey, classOf } from '../lib/timetable.js';
   import { freeDay } from '../lib/holidays.js';
   import DayLessonDialog from '../components/DayLessonDialog.svelte';
-  import { upcomingExams } from '../lib/exams.js';
+  import { upcomingExams, upcomingEvents } from '../lib/exams.js';
   import LessonCard from '../components/LessonCard.svelte';
   import GeneralTodos from '../components/GeneralTodos.svelte';
 
@@ -18,7 +18,10 @@
   const isToday = $derived(date === today());
   const lessons = $derived(lessonsFor(date));
   const earlier = $derived(isToday ? openFromEarlier() : []);
-  const exams = $derived(upcomingExams(14));
+  // Leistungsnachweise und eigene Termine der nächsten 14 Tage, nach Datum.
+  const upcoming = $derived(
+    [...upcomingExams(14).map((x) => ({ id: x.id, date: x.date, time: '', color: classOf(x.classId)?.color, lead: classOf(x.classId)?.name ?? '–', text: `${x.type}${x.topic ? `: ${x.topic}` : ''}` })), ...upcomingEvents(14).map((e) => ({ id: e.id, date: e.date, time: e.time, color: null, lead: e.time, text: e.title }))].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time)),
+  );
   const weekend = $derived(weekday(date) > 5);
 </script>
 
@@ -76,19 +79,18 @@
     <GeneralTodos />
     <section class="card">
       <div class="card-head">
-        <h2>Leistungsnachweise</h2>
-        <span class="muted small">nächste 14 Tage</span>
+        <h2>Termine</h2>
+        <button class="link small" onclick={() => (app.page = 'kalender')}>Kalender</button>
       </div>
-      {#if exams.length === 0}
-        <p class="muted small">Keine angesetzt.</p>
+      {#if upcoming.length === 0}
+        <p class="muted small">In den nächsten 14 Tagen steht nichts an.</p>
       {:else}
         <ul class="exams">
-          {#each exams as x (x.id)}
-            {@const c = classOf(x.classId)}
+          {#each upcoming as u (u.id)}
             <li>
-              <span class="dot" style:background={c?.color}></span>
-              <span><strong>{c?.name ?? '–'}</strong> {x.type}{x.topic ? `: ${x.topic}` : ''}</span>
-              <span class="muted small when">{relativeLabel(x.date) || fmtShort(x.date)}</span>
+              <span class="dot" class:plain={!u.color} style:background={u.color}></span>
+              <span>{#if u.lead}<strong>{u.lead}</strong>{/if} {u.text}</span>
+              <span class="muted small when">{relativeLabel(u.date) || fmtShort(u.date)}</span>
             </li>
           {/each}
         </ul>
@@ -176,6 +178,9 @@
     align-items: center;
     gap: 0.3rem;
     color: var(--muted);
+  }
+  .exams .dot.plain {
+    background: var(--line-strong);
   }
   .when {
     white-space: nowrap;

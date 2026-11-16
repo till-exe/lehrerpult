@@ -7,6 +7,8 @@
   import { fmtShort } from '../lib/dates.js';
   import { classOf, lessonName, lessonKey, periodLabel, timeRange, setNote, addTodo, toggleTodo, removeTodo, previousLesson } from '../lib/timetable.js';
 
+  import { examsOn } from '../lib/exams.js';
+
   let { date, lesson, onedit } = $props();
   let draft = $state('');
 
@@ -36,6 +38,7 @@
     <div class="head">
       <strong class="name">{lessonName(lesson)}</strong>
       <span class="muted">{[lesson.subject, lesson.room].filter(Boolean).join(' · ')}</span>
+      {#each lesson.classId ? examsOn(date, lesson.classId) : [] as x (x.id)}<span class="tag exam" title={x.note}>{x.type}{x.topic ? `: ${x.topic}` : ''}</span>{/each}
       {#if lesson.cancelled}<span class="tag warn">entfällt</span>
       {:else if lesson.orphan}<span class="tag warn">nicht mehr im Stundenplan</span>
       {:else if lesson.extra}<span class="tag">nur an diesem Tag</span>
@@ -117,6 +120,10 @@
     border-radius: 999px;
     background: var(--bg-side);
     color: var(--muted);
+  }
+  .tag.exam {
+    background: var(--accent);
+    color: #fff;
   }
   .tag.warn {
     background: var(--warn-soft);

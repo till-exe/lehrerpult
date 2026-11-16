@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
-  import { app, load } from '../lib/store.svelte.js';
+  import { app, load, flush } from '../lib/store.svelte.js';
   import { PAGES } from '../lib/pages.js';
   import Modal from '../components/Modal.svelte';
   import RecoveryCode from '../components/RecoveryCode.svelte';
@@ -18,6 +18,29 @@
   let restoreTarget = $state(null);
 
   const fmt = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  // Updates: nur wenn du auf den Knopf drückst.
+  let update = $state({ phase: 'idle', latest: '', percent: 0, error: '' }); // idle | checking | none | available | loading | ready | error
+  onMount(() => api.onUpdateProgress((p) => (update.percent = p)));
+
+  async function checkUpdate() {
+    update = { phase: 'checking', latest: '', percent: 0, error: '' };
+    const res = await api.checkUpdate();
+    if (!res.ok) update = { ...update, phase: 'error', error: res.error ?? 'Die Suche ist fehlgeschlagen. Besteht eine Internetverbindung?' };
+    else update = { ...update, phase: res.available ? 'available' : 'none', latest: res.latest ?? '' };
+  }
+
+  async function downloadUpdate() {
+    update.phase = 'loading';
+    const res = await api.downloadUpdate();
+    if (res.ok) update.phase = 'ready';
+    else update = { ...update, phase: 'error', error: res.error ?? 'Der Download ist fehlgeschlagen.' };
+  }
+
+  async function installUpdate() {
+    await flush();
+    api.installUpdate();
+  }
 
   async function refresh() {
     const res = await api.listBackups();
@@ -162,6 +185,28 @@
         {/each}
       </select>
     </label>
+
+    <div class="extra">
+      <div>
+        <h3>Updates</h3>
+        <p class="muted small">
+          {#if update.phase === 'checking'}Suche läuft …
+          {:else if update.phase === 'none'}Lehrerpult {app.version} ist aktuell.
+          {:else if update.phase === 'available'}Version {update.latest} ist verfügbar (installiert: {app.version}).
+          {:else if update.phase === 'loading'}Version {update.latest} wird geladen … {update.percent} %
+          {:else if update.phase === 'ready'}Version {update.latest} ist bereit. Beim Installieren startet das Lehrerpult neu; vorher wird gesichert.
+          {:else if update.phase === 'error'}<span class="error">{update.error}</span>
+          {:else}Installiert ist Version {app.version}. Gesucht wird nur, wenn du es anstößt.{/if}
+        </p>
+      </div>
+      {#if update.phase === 'available'}
+        <button class="btn primary" onclick={downloadUpdate}>Herunterladen</button>
+      {:else if update.phase === 'ready'}
+        <button class="btn primary" onclick={installUpdate}>Jetzt installieren</button>
+      {:else}
+        <button class="btn" disabled={update.phase === 'checking' || update.phase === 'loading'} onclick={checkUpdate}>Nach Updates suchen</button>
+      {/if}
+    </div>
 
     <div class="extra">
       <div>

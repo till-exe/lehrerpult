@@ -18,6 +18,7 @@ export function emptyData() {
     oral: [],
     forgot: [],
     exams: [],
+    events: [], // eigene Termine im Kalender
     lists: [],
     seatplans: [],
     wheels: [],

@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Vault, writeAtomic } = require('./vault.cjs');
 const backups = require('./backups.cjs');
+const { autoUpdater } = require('electron-updater');
 
 app.setName('Lehrerpult');
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -179,6 +180,31 @@ handle('app:ready-to-close', () => {
   closeConfirmed = true;
   if (vault.unlocked) runBackup();
   win?.close();
+  return { ok: true };
+});
+
+// ---------- Updates (nur auf Knopfdruck, nie von selbst) ----------
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
+autoUpdater.on('download-progress', (p) => win?.webContents.send('update:progress', Math.round(p.percent)));
+
+handle('update:check', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'Updates gibt es nur in der installierten Anwendung.' };
+  const res = await autoUpdater.checkForUpdates();
+  const latest = res?.updateInfo?.version;
+  return { ok: true, current: app.getVersion(), latest, available: !!latest && res.isUpdateAvailable !== false && latest !== app.getVersion() };
+});
+
+handle('update:download', async () => {
+  await autoUpdater.downloadUpdate();
+  return { ok: true };
+});
+
+// Vorher speichert die Oberfläche; hier wird noch gesichert, dann installiert und neu gestartet.
+handle('update:install', () => {
+  closeConfirmed = true;
+  if (vault.unlocked) runBackup();
+  autoUpdater.quitAndInstall(true, true);
   return { ok: true };
 });
 

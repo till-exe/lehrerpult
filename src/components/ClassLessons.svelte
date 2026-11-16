@@ -4,6 +4,7 @@
   import { today, addDays, fmtShort } from '../lib/dates.js';
   import { autosize } from '../lib/autosize.js';
   import { classLessons, lessonKey, periodLabel, setNote } from '../lib/timetable.js';
+  import { examsOn } from '../lib/exams.js';
 
   let { klass } = $props();
   let back = $state(28);
@@ -21,7 +22,7 @@
 </script>
 
 <div class="wrap" bind:this={root}>
-  <p class="muted small intro">Was in welcher Stunde dran war und was geplant ist. Das Thema ist dieselbe Kurzbeschreibung wie auf der Startseite.</p>
+  <p class="muted small intro">Was in welcher Stunde dran war und was geplant ist. Das Thema ist dieselbe Kurzbeschreibung wie auf der Startseite. Leistungsnachweise der Klasse sind markiert.</p>
   <button class="link small" onclick={() => (back += 28)}>Frühere Stunden anzeigen</button>
 
   {#if rows.length === 0}
@@ -39,7 +40,10 @@
           {#if l.cancelled}
             <span class="muted">entfällt</span>
           {:else}
-            <textarea rows="1" aria-label="Thema" value={l.note} oninput={(e) => setNote(r.date, lessonKey(l), e.currentTarget.value)} use:autosize={l.note}></textarea>
+            <span class="topic">
+              {#each examsOn(r.date, klass.id) as x (x.id)}<span class="exam" title={x.note}>{x.type}{x.topic ? `: ${x.topic}` : ''}</span>{/each}
+              <textarea rows="1" aria-label="Thema" value={l.note} oninput={(e) => setNote(r.date, lessonKey(l), e.currentTarget.value)} use:autosize={l.note}></textarea>
+            </span>
           {/if}
           <span class="todos muted small">{#if l.todos.length}{l.todos.filter((t) => !t.done).length}/{l.todos.length} To-dos offen{/if}</span>
         </li>
@@ -85,6 +89,25 @@
   }
   .period {
     font-size: 0.88rem;
+  }
+  .topic {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .exam {
+    flex: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   textarea {
     border-color: transparent;

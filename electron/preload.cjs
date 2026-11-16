@@ -26,6 +26,14 @@ contextBridge.exposeInMainWorld('lehrerpult', {
   chooseExtraBackupDir: call('backups:choose-extra-dir'),
   openFolder: call('folders:open'),
   readyToClose: call('app:ready-to-close'),
+  checkUpdate: call('update:check'),
+  downloadUpdate: call('update:download'),
+  installUpdate: call('update:install'),
+  onUpdateProgress: (fn) => {
+    const listener = (_e, percent) => fn(percent);
+    ipcRenderer.on('update:progress', listener);
+    return () => ipcRenderer.removeListener('update:progress', listener);
+  },
   onLockNow: on('app:lock-now'),
   onFlushAndClose: on('app:flush-and-close'),
 });

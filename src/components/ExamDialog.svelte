@@ -18,7 +18,7 @@
   }
 </script>
 
-<Modal title={exam ? 'Leistungsnachweis bearbeiten' : 'Neuer Leistungsnachweis'} {onclose}>
+<Modal title={exam?.id ? 'Leistungsnachweis bearbeiten' : 'Neuer Leistungsnachweis'} {onclose}>
   <form id="exam-form" onsubmit={(ev) => (ev.preventDefault(), save())}>
     <div class="row">
       <label class="field">Klasse
@@ -38,7 +38,7 @@
     {#if error}<p class="error">{error}</p>{/if}
   </form>
   {#snippet actions()}
-    {#if exam}<button class="btn danger left" onclick={() => (deleteExam(exam.id), onclose())}>Löschen</button>{/if}
+    {#if exam?.id}<button class="btn danger left" onclick={() => (deleteExam(exam.id), onclose())}>Löschen</button>{/if}
     <button class="btn ghost" onclick={onclose}>Abbrechen</button>
     <button class="btn primary" type="submit" form="exam-form">Speichern</button>
   {/snippet}

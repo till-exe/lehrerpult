@@ -40,6 +40,7 @@ export function search(query) {
     'Leistungsnachweise',
     d.exams.filter((x) => hit(x.topic, x.type, x.note)).map((x) => ({ label: `${x.type}${x.topic ? ': ' + x.topic : ''}`, sub: `${fmtShort(x.date)} · ${classOf(x.classId)?.name ?? ''}`, run: () => go('leistungsnachweise') })),
   );
+  add('Termine', d.events.filter((e) => hit(e.title, e.note)).map((e) => ({ label: e.title, sub: fmtShort(e.date), run: () => go('start', { date: e.date }) })));
   add('Listen', d.lists.filter((l) => hit(l.name)).map((l) => ({ label: l.name, sub: classOf(l.classId)?.name, run: () => go('klasse', { classTab: 'listen', listId: l.id }, l.classId) })));
   return groups;
 }

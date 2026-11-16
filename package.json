@@ -1,12 +1,12 @@
 {
   "name": "lehrerpult",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Lehrerpult",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "dist:win": "vite build && electron-builder --win nsis --x64"
+    "dist:win": "vite build && electron-builder --win nsis --x64 --publish never"
   },
   "author": "Till",
   "devDependencies": {
@@ -49,6 +49,20 @@
       "artifactName": "Lehrerpult-Setup-${version}.exe",
       "runAfterFinish": true
     },
-    "publish": null
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "till-exe",
+        "repo": "lehrerpult",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/till-exe/lehrerpult.git"
   }
 }

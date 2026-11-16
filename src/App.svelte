@@ -7,13 +7,14 @@
   import Lock from './screens/Lock.svelte';
   import Start from './pages/Start.svelte';
   import Klasse from './pages/Klasse.svelte';
+  import Kalender from './pages/Kalender.svelte';
   import Muendlich from './pages/Muendlich.svelte';
   import Leistungsnachweise from './pages/Leistungsnachweise.svelte';
   import Stundenplan from './pages/Stundenplan.svelte';
   import Unterricht from './pages/Unterricht.svelte';
   import Notizen from './pages/Notizen.svelte';
 
-  const VIEWS = { start: Start, klasse: Klasse, muendlich: Muendlich, leistungsnachweise: Leistungsnachweise, stundenplan: Stundenplan, unterricht: Unterricht, notizen: Notizen, einstellungen: Settings };
+  const VIEWS = { start: Start, kalender: Kalender, klasse: Klasse, muendlich: Muendlich, leistungsnachweise: Leistungsnachweise, stundenplan: Stundenplan, unterricht: Unterricht, notizen: Notizen, einstellungen: Settings };
   import Settings from './pages/Settings.svelte';
 
   onMount(async () => {

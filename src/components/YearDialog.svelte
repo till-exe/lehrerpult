@@ -8,7 +8,7 @@
   let { onclose, ondone } = $props();
 
   let classes = $state(sortedClasses().map((c) => ({ id: c.id, old: c.name, name: c.name, action: 'keep', count: studentsOf(c.id).length })));
-  let clear = $state({ oral: true, forgot: true, lists: true, exams: true, days: true, wheels: true, timetable: false, seatplans: false });
+  let clear = $state({ oral: true, forgot: true, lists: true, exams: true, events: false, days: true, wheels: true, timetable: false, seatplans: false });
   let error = $state('');
   let busy = $state(false);
 
@@ -17,6 +17,7 @@
     ['forgot', 'Vermerke zu Hausaufgaben und Material'],
     ['lists', 'Abhak-Listen'],
     ['exams', 'Termine der Leistungsnachweise'],
+    ['events', 'Eigene Termine im Kalender'],
     ['days', 'Stundenverlauf (Kurzbeschreibungen und To-dos der Stunden)'],
     ['wheels', 'Streichungen in den Glücksrädern'],
     ['timetable', 'Stundenplan (alle Varianten)'],
@@ -50,6 +51,7 @@
     if (clear.forgot) d.forgot = [];
     if (clear.lists) d.lists = [];
     if (clear.exams) d.exams = [];
+    if (clear.events) d.events = [];
     if (clear.days) d.days = {};
     if (clear.wheels) for (const w of d.wheels) w.struck = {};
     if (clear.seatplans) d.seatplans = [];

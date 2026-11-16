@@ -6,6 +6,27 @@ export const EXAM_TYPES = ['Schulaufgabe', 'Kurzarbeit', 'Ex', 'Test', 'Referat'
 
 const byDate = (a, b) => a.date.localeCompare(b.date);
 
+export const examsOn = (date, classId) => app.data.exams.filter((x) => x.date === date && (!classId || x.classId === classId));
+
+// Eigene Termine (Konferenz, Elternabend …)
+export const eventsOn = (date) => app.data.events.filter((e) => e.date === date).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+export function upcomingEvents(days) {
+  const from = today();
+  const to = addDays(from, days);
+  return app.data.events.filter((e) => e.date >= from && e.date <= to);
+}
+
+export function saveEvent(event) {
+  const i = app.data.events.findIndex((e) => e.id === event.id);
+  if (i >= 0) app.data.events[i] = event;
+  else app.data.events.push({ ...event, id: uid() });
+}
+
+export function deleteEvent(id) {
+  app.data.events = app.data.events.filter((e) => e.id !== id);
+}
+
 export function upcomingExams(days = null) {
   const from = today();
   const to = days === null ? '9999-12-31' : addDays(from, days);
