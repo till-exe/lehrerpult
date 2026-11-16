@@ -14,4 +14,4 @@ Den aktuellen Installer gibt es unter [Releases](https://github.com/till-exe/leh
     npm run dev        # Oberfläche im Browser
     npm run dist:win   # Installer bauen
 
-Eine neue Version entsteht, indem die Versionsnummer in `package.json` erhöht und eine Marke `vX.Y.Z` hochgeladen wird.
+Eine neue Version entsteht, indem die Versionsnummer in `package.json` erhöht und auf `main` hochgeladen wird. GitHub baut und veröffentlicht den Installer dann von selbst.

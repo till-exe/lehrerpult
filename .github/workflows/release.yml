@@ -1,21 +1,37 @@
 # Baut den Windows-Installer und veröffentlicht ihn als Release,
-# sobald eine Versionsmarke wie v0.7.0 hochgeladen wird.
+# sobald auf main eine Versionsnummer liegt, die noch nicht veröffentlicht ist.
 name: Release
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: write
 jobs:
   windows:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Version prüfen
+        id: v
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if gh release view "v$version" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-node@v4
+        if: steps.v.outputs.new == 'true'
         with:
           node-version: 22
-      - run: npm install
-      - run: npx vite build
-      - run: npx electron-builder --win nsis --x64 --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - if: steps.v.outputs.new == 'true'
+        run: npm install
+      - if: steps.v.outputs.new == 'true'
+        run: npx vite build
+      - if: steps.v.outputs.new == 'true'
+        run: npx electron-builder --win nsis --x64 --publish always
