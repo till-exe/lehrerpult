@@ -101,6 +101,16 @@
     {:else if !freeDay(date)}
       <p class="muted small">Keine Stunden.</p>
     {/if}
+    {#if examsOn(date).length || eventsOn(date).length}
+      <ul class="daylist">
+        {#each eventsOn(date) as e (e.id)}
+          <li><span class="p">{e.time}</span><strong>Termin</strong><span>{e.title}</span></li>
+        {/each}
+        {#each examsOn(date) as x (x.id)}
+          <li><span class="p"></span><strong>{classOf(x.classId)?.name}</strong><span>{x.type}{x.topic ? `: ${x.topic}` : ''}</span></li>
+        {/each}
+      </ul>
+    {/if}
     {#snippet actions()}
       <button class="btn left" onclick={() => openDay(date)}>Tagesansicht</button>
       <button class="btn" onclick={() => (dialog = { kind: 'event', event: { date } })}>Termin</button>
