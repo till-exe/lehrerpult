@@ -39,7 +39,7 @@ function backupAll(source, roots) {
 
 function list(root) {
   const out = [];
-  for (const kind of ['taeglich', 'monatlich']) {
+  for (const kind of ['taeglich', 'monatlich', 'archiv', 'vor-update']) {
     const dir = path.join(root, kind);
     if (!fs.existsSync(dir)) continue;
     for (const f of fs.readdirSync(dir)) {
@@ -52,4 +52,15 @@ function list(root) {
   return out.sort((a, b) => b.modified.localeCompare(a.modified));
 }
 
-module.exports = { backupAll, list, stamp };
+// Dauerhafte Kopie, die nie automatisch gelöscht wird (z. B. zum Schuljahresende).
+function archive(source, root, label) {
+  const dir = path.join(root, 'archiv');
+  fs.mkdirSync(dir, { recursive: true });
+  const safe = label.replace(/[^\w.-]+/g, '-');
+  let file = path.join(dir, `lehrerpult-${safe}.dat`);
+  for (let i = 2; fs.existsSync(file); i++) file = path.join(dir, `lehrerpult-${safe}-${i}.dat`);
+  fs.copyFileSync(source, file);
+  return file;
+}
+
+module.exports = { backupAll, list, stamp, archive };

@@ -151,6 +151,11 @@ handle('backups:now', () => {
   return { ok: problems.length === 0, error: problems.map((p) => `${p.root}: ${p.message}`).join('\n') };
 });
 
+handle('backups:archive', (label) => {
+  backups.archive(files.data, files.backups, label);
+  return { ok: true };
+});
+
 handle('backups:restore', (file) => {
   const data = vault.readBackup(file);
   const safety = path.join(files.backups, 'vor-wiederherstellung');

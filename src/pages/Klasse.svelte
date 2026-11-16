@@ -11,15 +11,22 @@
   import StudentDialog from '../components/StudentDialog.svelte';
   import Seating from '../components/Seating.svelte';
   import ClassLists from '../components/ClassLists.svelte';
+  import ClassLessons from '../components/ClassLessons.svelte';
+  import ClassForgot from '../components/ClassForgot.svelte';
+  import StudentOverview from '../components/StudentOverview.svelte';
 
   const TABS = [
     { id: 'schueler', label: 'Schüler' },
+    { id: 'stunden', label: 'Stunden' },
     { id: 'sitzplan', label: 'Sitzplan' },
     { id: 'listen', label: 'Listen' },
+    { id: 'vergessen', label: 'Hausaufgaben' },
   ];
 
-  let tab = $state('schueler');
-  let dialog = $state(null); // { kind: 'class' | 'import' | 'student', ... }
+  let tab = $state(app.jump?.classTab ?? 'schueler');
+  let dialog = $state(app.jump?.studentId ? { kind: 'overview', studentId: app.jump.studentId } : null); // { kind: 'class' | 'import' | 'student' | 'overview', ... }
+  const listId = app.jump?.listId ?? null;
+  app.jump = null;
   let notice = $state('');
 
   const klass = $derived(currentClass());
@@ -78,7 +85,7 @@
       <ol class="students">
         {#each students as s, i (s.id)}
           <li>
-            <button onclick={() => (dialog = { kind: 'student', student: s })} title="Bearbeiten">
+            <button onclick={() => (dialog = { kind: 'overview', studentId: s.id })} title="Übersicht öffnen">
               <span class="nr">{i + 1}</span>
               <span><strong>{s.lastName}</strong>{s.firstName ? `, ${s.firstName}` : ''}</span>
               <Pencil size={15} class="edit" />
@@ -87,10 +94,14 @@
         {/each}
       </ol>
     {/if}
+  {:else if tab === 'stunden'}
+    {#key klass.id}<ClassLessons {klass} />{/key}
   {:else if tab === 'sitzplan'}
-    {#key klass.id}<Seating {klass} />{/key}
+    {#key klass.id}<Seating {klass} onstudent={(s) => (dialog = { kind: 'overview', studentId: s.id })} />{/key}
+  {:else if tab === 'listen'}
+    {#key klass.id}<ClassLists {klass} initialId={listId} />{/key}
   {:else}
-    {#key klass.id}<ClassLists {klass} />{/key}
+    {#key klass.id}<ClassForgot {klass} onstudent={(s) => (dialog = { kind: 'overview', studentId: s.id })} />{/key}
   {/if}
 {/if}
 
@@ -98,6 +109,8 @@
   <ClassDialog klass={dialog.klass ?? null} onclose={() => (dialog = null)} />
 {:else if dialog?.kind === 'import'}
   <ImportDialog {klass} onclose={() => (dialog = null)} ondone={imported} />
+{:else if dialog?.kind === 'overview'}
+  <StudentOverview studentId={dialog.studentId} onclose={() => (dialog = null)} onedit={(student) => (dialog = { kind: 'student', student })} />
 {:else if dialog?.kind === 'student'}
   <StudentDialog {klass} student={dialog.student ?? null} onclose={() => (dialog = null)} />
 {/if}

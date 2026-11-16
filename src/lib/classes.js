@@ -1,5 +1,6 @@
 import { app } from './store.svelte.js';
 import { byName, sameName } from './names.js';
+import { planChange } from './timetable.js';
 
 // Gedeckte Akzentfarben, um Klassen auseinanderzuhalten.
 export const COLORS = ['#2e6e61', '#3a6ea5', '#5a5fb0', '#8a4f86', '#b2535f', '#b07a2a', '#6b7d3a', '#5d6b78'];
@@ -38,9 +39,13 @@ export function deleteClass(id) {
   app.data.students = app.data.students.filter((s) => s.classId !== id);
   app.data.oral = app.data.oral.filter((o) => o.classId !== id);
   app.data.exams = app.data.exams.filter((x) => x.classId !== id);
-  app.data.timetable = app.data.timetable.filter((e) => e.classId !== id);
+  planChange(() => {
+    app.data.timetable = app.data.timetable.filter((e) => e.classId !== id);
+    for (const p of app.data.plans) if (p.entries) p.entries = p.entries.filter((e) => e.classId !== id);
+  });
   app.data.lists = app.data.lists.filter((l) => l.classId !== id);
-  delete app.data.seating[id];
+  app.data.seatplans = app.data.seatplans.filter((p) => p.classId !== id);
+  app.data.forgot = app.data.forgot.filter((f) => f.classId !== id);
   app.data.wheels = app.data.wheels.filter((w) => w.classId !== id);
   for (const n of app.data.notes) if (n.classId === id) n.classId = null;
   if (app.data.settings.classId === id) app.data.settings.classId = sortedClasses()[0]?.id ?? null;
@@ -74,4 +79,5 @@ export function updateStudent(id, patch) {
 export function removeStudent(id) {
   app.data.students = app.data.students.filter((s) => s.id !== id);
   app.data.oral = app.data.oral.filter((o) => o.studentId !== id);
+  app.data.forgot = app.data.forgot.filter((f) => f.studentId !== id);
 }

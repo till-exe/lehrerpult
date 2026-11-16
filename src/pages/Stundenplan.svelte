@@ -2,11 +2,25 @@
   import Clock from '@lucide/svelte/icons/clock';
   import { app } from '../lib/store.svelte.js';
   import { WEEKDAYS, today, weekday } from '../lib/dates.js';
-  import { periods, entriesFor, classOf, lessonName } from '../lib/timetable.js';
+  import CalendarOff from '@lucide/svelte/icons/calendar-off';
+  import Plus from '@lucide/svelte/icons/plus';
+  import { periods, entriesFor, classOf, lessonName, activePlan, switchPlan, addPlan, deletePlan } from '../lib/timetable.js';
+  import HolidaysDialog from '../components/HolidaysDialog.svelte';
+  import Modal from '../components/Modal.svelte';
   import EntryDialog from '../components/EntryDialog.svelte';
   import PeriodsDialog from '../components/PeriodsDialog.svelte';
 
   let dialog = $state(null);
+  let planName = $state('');
+  const plan = $derived(activePlan());
+
+  function submitPlan() {
+    if (!planName.trim()) return;
+    if (dialog.kind === 'newplan') addPlan(planName.trim());
+    else plan.name = planName.trim();
+    dialog = null;
+  }
+  const autofocus = (node) => node.focus();
   const todayNr = weekday(today());
 
   // Welche Felder sind von einer Doppelstunde darüber belegt?
@@ -22,10 +36,24 @@
 <header>
   <div>
     <h1>Stundenplan</h1>
-    <p class="muted">Gilt jede Woche. Änderungen wirken ab sofort; Tage, an denen du schon etwas notiert hast, behalten ihre Stunden.</p>
+    <p class="muted">Gilt jede Woche. Bei Änderungen wandern geplante Themen mit zur jeweils nächsten Stunde der Klasse.</p>
   </div>
-  <button class="btn" onclick={() => (dialog = { kind: 'periods' })}><Clock size={17} /> Zeitraster</button>
+  <div class="tools">
+    <button class="btn" onclick={() => (dialog = { kind: 'holidays' })}><CalendarOff size={17} /> Ferien</button>
+    <button class="btn" onclick={() => (dialog = { kind: 'periods' })}><Clock size={17} /> Zeitraster</button>
+  </div>
 </header>
+
+<div class="plans">
+  {#each app.data.plans as p (p.id)}
+    <button class:on={p.id === plan.id} onclick={() => switchPlan(p.id)}>{p.name}</button>
+  {/each}
+  <button class="addplan" title="Kopie des aktuellen Plans als neue Variante" onclick={() => ((planName = ''), (dialog = { kind: 'newplan' }))}><Plus size={15} /> Variante</button>
+  <span class="planedit">
+    <button class="link small" onclick={() => ((planName = plan.name), (dialog = { kind: 'renameplan' }))}>Umbenennen</button>
+    {#if app.data.plans.length > 1}<button class="link small" onclick={() => (dialog = { kind: 'deleteplan' })}>Variante löschen</button>{/if}
+  </span>
+</div>
 
 <div class="grid" style:grid-template-rows="auto repeat({periods().length}, minmax(64px, auto))">
   <div class="corner"></div>
@@ -70,6 +98,27 @@
   <EntryDialog entry={dialog.entry} onclose={() => (dialog = null)} />
 {:else if dialog?.kind === 'periods'}
   <PeriodsDialog onclose={() => (dialog = null)} />
+{:else if dialog?.kind === 'holidays'}
+  <HolidaysDialog onclose={() => (dialog = null)} />
+{:else if dialog?.kind === 'newplan' || dialog?.kind === 'renameplan'}
+  <Modal title={dialog.kind === 'newplan' ? 'Neue Variante' : 'Variante umbenennen'} onclose={() => (dialog = null)}>
+    {#if dialog.kind === 'newplan'}<p class="muted small">Die neue Variante startet als Kopie von „{plan.name}“. Danach wechselst du mit einem Klick zwischen den Varianten.</p>{/if}
+    <form id="plan-form" onsubmit={(e) => (e.preventDefault(), submitPlan())}>
+      <label class="field">Name<input type="text" bind:value={planName} use:autofocus /></label>
+    </form>
+    {#snippet actions()}
+      <button class="btn ghost" onclick={() => (dialog = null)}>Abbrechen</button>
+      <button class="btn primary" type="submit" form="plan-form">Speichern</button>
+    {/snippet}
+  </Modal>
+{:else if dialog?.kind === 'deleteplan'}
+  <Modal title="Variante „{plan.name}“ löschen?" onclose={() => (dialog = null)}>
+    <p class="muted">Der Stundenplan dieser Variante wird gelöscht. Danach gilt wieder die andere Variante.</p>
+    {#snippet actions()}
+      <button class="btn ghost" onclick={() => (dialog = null)}>Abbrechen</button>
+      <button class="btn danger" onclick={() => (deletePlan(plan.id), (dialog = null))}>Löschen</button>
+    {/snippet}
+  </Modal>
 {/if}
 
 <style>
@@ -83,6 +132,44 @@
   header p {
     margin-top: 0.3rem;
     font-size: 0.92rem;
+  }
+  .tools {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .plans {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1.1rem;
+  }
+  .plans > button {
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.3rem 0.9rem;
+    font-weight: 500;
+  }
+  .plans > button.on {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .plans .addplan {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    border-style: dashed;
+    color: var(--muted);
+  }
+  .planedit {
+    display: flex;
+    gap: 0.9rem;
+    margin-left: 0.6rem;
+  }
+  .planedit .link {
+    color: var(--muted);
   }
   .grid {
     display: grid;

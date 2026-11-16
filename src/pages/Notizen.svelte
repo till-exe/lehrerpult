@@ -14,7 +14,8 @@
 
   let query = $state('');
   let filter = $state('alle');
-  let selectedId = $state(null);
+  let selectedId = $state(app.jump?.noteId ?? null);
+  if (app.jump?.noteId) app.jump = null;
   let editing = $state(false);
   let confirmDelete = $state(false);
   let textarea = $state();

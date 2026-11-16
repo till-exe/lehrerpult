@@ -5,6 +5,11 @@
   import { PAGES } from '../lib/pages.js';
   import Modal from '../components/Modal.svelte';
   import RecoveryCode from '../components/RecoveryCode.svelte';
+  import YearDialog from '../components/YearDialog.svelte';
+
+  const KIND = { taeglich: 'Tagesstand', monatlich: 'Monatsstand', archiv: 'Archiv', 'vor-update': 'vor Update' };
+  // Archive immer zeigen, dazu die neuesten übrigen Stände.
+  const shown = $derived([...backups.filter((b) => b.kind === 'archiv'), ...backups.filter((b) => b.kind !== 'archiv').slice(0, 8)]);
 
   let backups = $state([]);
   let notice = $state('');
@@ -136,10 +141,10 @@
       <p class="muted small">Noch keine Sicherungen vorhanden.</p>
     {:else}
       <ul class="backups">
-        {#each backups.slice(0, 8) as b (b.path)}
+        {#each shown as b (b.path)}
           <li>
             <span>{fmt.format(new Date(b.modified))}</span>
-            <span class="muted small">{b.kind === 'taeglich' ? 'Tagesstand' : 'Monatsstand'}</span>
+            <span class="muted small">{KIND[b.kind] ?? b.kind}</span>
             <button class="btn ghost" onclick={() => ((restoreTarget = b), (dialog = 'restore'))}>Wiederherstellen</button>
           </li>
         {/each}
@@ -160,6 +165,14 @@
 
     <div class="extra">
       <div>
+        <h3>Neues Schuljahr</h3>
+        <p class="muted small">Alten Stand archivieren, Klassen umbenennen oder löschen und Noten, Listen und Stundenverlauf leeren.</p>
+      </div>
+      <button class="btn" onclick={() => (dialog = 'year')}>Schuljahr wechseln</button>
+    </div>
+
+    <div class="extra">
+      <div>
         <h3>Gerätewechsel</h3>
         <p class="muted small">Datei „lehrerpult.dat“ aus dem Datenordner auf das neue Gerät kopieren und dort beim ersten Start „Daten von einem anderen Gerät übernehmen“ wählen.</p>
       </div>
@@ -170,7 +183,9 @@
   <p class="muted small">Lehrerpult {app.version}</p>
 </div>
 
-{#if dialog === 'password'}
+{#if dialog === 'year'}
+  <YearDialog onclose={() => (dialog = null)} ondone={() => ((dialog = null), refresh(), flash('Neues Schuljahr eingerichtet. Der alte Stand liegt als Archiv bei den Sicherungen.'))} />
+{:else if dialog === 'password'}
   <Modal title="Passwort ändern" onclose={() => (dialog = null)}>
     <label class="field">Bisheriges Passwort<input type="password" bind:value={form.old} /></label>
     <label class="field">Neues Passwort<input type="password" bind:value={form.pw} /></label>

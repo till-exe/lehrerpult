@@ -5,11 +5,12 @@
   import { today, fmtShort } from '../lib/dates.js';
   import Modal from './Modal.svelte';
 
-  let { klass } = $props();
+  let { klass, initialId = null } = $props();
 
   const lists = $derived(app.data.lists.filter((l) => l.classId === klass.id).sort((a, b) => b.created.localeCompare(a.created)));
   const students = $derived(studentsOf(klass.id));
-  let selectedId = $state(null);
+  // svelte-ignore state_referenced_locally
+  let selectedId = $state(initialId);
   const list = $derived(lists.find((l) => l.id === selectedId) ?? lists[0] ?? null);
   let dialog = $state(null);
   let name = $state('');

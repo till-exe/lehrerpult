@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('lehrerpult', {
   listBackups: call('backups:list'),
   backupNow: call('backups:now'),
   restoreBackup: call('backups:restore'),
+  archive: call('backups:archive'),
   chooseExtraBackupDir: call('backups:choose-extra-dir'),
   openFolder: call('folders:open'),
   readyToClose: call('app:ready-to-close'),

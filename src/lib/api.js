@@ -26,6 +26,7 @@ function mockApi() {
     listBackups: () => ok({ items, folder: 'C:\\Users\\Till\\AppData\\Roaming\\Lehrerpult\\sicherungen' }),
     backupNow: () => ok(),
     restoreBackup: () => ok({ data }),
+    archive: () => ok(),
     chooseExtraBackupDir: () => ((config = { ...config, extraBackupDir: 'E:\\Lehrerpult-Sicherung' }), ok({ config })),
     openFolder: () => ok(),
     readyToClose: () => ok(),

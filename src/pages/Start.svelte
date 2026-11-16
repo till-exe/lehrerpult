@@ -3,12 +3,18 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import { app } from '../lib/store.svelte.js';
   import { today, addDays, fmtLong, fmtShort, relativeLabel, weekday } from '../lib/dates.js';
-  import { lessonsFor, openFromEarlier, toggleTodo, lessonName, classOf } from '../lib/timetable.js';
+  import Plus from '@lucide/svelte/icons/plus';
+  import { lessonsFor, openFromEarlier, toggleTodo, lessonName, lessonKey, classOf } from '../lib/timetable.js';
+  import { freeDay } from '../lib/holidays.js';
+  import DayLessonDialog from '../components/DayLessonDialog.svelte';
   import { upcomingExams } from '../lib/exams.js';
   import LessonCard from '../components/LessonCard.svelte';
   import GeneralTodos from '../components/GeneralTodos.svelte';
 
-  let date = $state(today());
+  let date = $state(app.jump?.date ?? today());
+  if (app.jump?.date) app.jump = null;
+  let dialog = $state(null);
+  const free = $derived(freeDay(date));
   const isToday = $derived(date === today());
   const lessons = $derived(lessonsFor(date));
   const earlier = $derived(isToday ? openFromEarlier() : []);
@@ -37,7 +43,7 @@
           {#each earlier as o (o.todo.id)}
             <li>
               <label>
-                <input type="checkbox" checked={o.todo.done} onchange={() => toggleTodo(o.date, o.index, o.todo.id)} />
+                <input type="checkbox" checked={o.todo.done} onchange={() => toggleTodo(o.date, o.key, o.todo.id)} />
                 <span>{o.todo.text}</span>
               </label>
               <span class="muted small">{fmtShort(o.date)} · {lessonName(o.lesson)}</span>
@@ -47,20 +53,23 @@
       </section>
     {/if}
 
-    {#if lessons.length}
-      {#each lessons as lesson, i (lesson.entryId ?? lesson.id)}
-        <LessonCard {date} {lesson} index={i} />
-      {/each}
-    {:else if weekend}
-      <div class="empty"><p>Wochenende, keine Stunden.</p></div>
-    {:else if app.data.timetable.length === 0}
-      <div class="empty">
-        <p>Noch kein Stundenplan angelegt. Sobald er steht, erscheinen hier alle Stunden des Tages.</p>
-        <button class="btn" onclick={() => (app.page = 'stundenplan')}>Zum Stundenplan</button>
-      </div>
-    {:else}
-      <div class="empty"><p>An diesem Tag stehen keine Stunden im Plan.</p></div>
+    {#if free}<p class="free">{free} – unterrichtsfrei</p>{/if}
+    {#each lessons as lesson (lessonKey(lesson))}
+      <LessonCard {date} {lesson} onedit={(l) => (dialog = { lesson: $state.snapshot(l) })} />
+    {/each}
+    {#if lessons.length === 0 && !free}
+      {#if weekend}
+        <div class="empty"><p>Wochenende, keine Stunden.</p></div>
+      {:else if app.data.timetable.length === 0}
+        <div class="empty">
+          <p>Noch kein Stundenplan angelegt. Sobald er steht, erscheinen hier alle Stunden des Tages.</p>
+          <button class="btn" onclick={() => (app.page = 'stundenplan')}>Zum Stundenplan</button>
+        </div>
+      {:else}
+        <div class="empty"><p>An diesem Tag stehen keine Stunden im Plan.</p></div>
+      {/if}
     {/if}
+    <button class="link small extra" onclick={() => (dialog = { lesson: null })}><Plus size={14} /> Stunde nur für diesen Tag (z. B. Vertretung)</button>
   </div>
 
   <aside class="col">
@@ -87,6 +96,10 @@
     </section>
   </aside>
 </div>
+
+{#if dialog}
+  <DayLessonDialog {date} lesson={dialog.lesson} onclose={() => (dialog = null)} />
+{/if}
 
 <style>
   header {
@@ -149,6 +162,20 @@
     height: 9px;
     border-radius: 50%;
     background: var(--muted);
+  }
+  .free {
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .extra {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--muted);
   }
   .when {
     white-space: nowrap;

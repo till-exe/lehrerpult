@@ -1,6 +1,7 @@
 import { app } from './store.svelte.js';
 import { uid } from './classes.js';
-import { weekday, today } from './dates.js';
+import { weekday, today, addDays } from './dates.js';
+import { freeDay } from './holidays.js';
 
 export const DEFAULT_PERIODS = [
   { start: '07:45', end: '08:30' },
@@ -45,19 +46,52 @@ export function overlaps(entry, ignoreId) {
 }
 
 export function saveEntry(entry) {
-  const i = app.data.timetable.findIndex((e) => e.id === entry.id);
-  if (i >= 0) app.data.timetable[i] = entry;
-  else app.data.timetable.push({ ...entry, id: uid() });
+  planChange(() => {
+    const i = app.data.timetable.findIndex((e) => e.id === entry.id);
+    if (i >= 0) app.data.timetable[i] = entry;
+    else app.data.timetable.push({ ...entry, id: uid() });
+  });
 }
 
 export function deleteEntry(id) {
-  app.data.timetable = app.data.timetable.filter((e) => e.id !== id);
+  planChange(() => (app.data.timetable = app.data.timetable.filter((e) => e.id !== id)));
+}
+
+// ---------- Varianten des Stundenplans (z. B. für den FOS-Blockwechsel) ----------
+
+export const activePlan = () => app.data.plans.find((p) => p.id === app.data.settings.planId) ?? app.data.plans[0];
+
+export function switchPlan(id) {
+  const from = activePlan();
+  const to = app.data.plans.find((p) => p.id === id);
+  if (!to || to === from) return;
+  planChange(() => {
+    from.entries = app.data.timetable;
+    app.data.timetable = to.entries ?? [];
+    to.entries = null;
+    app.data.settings.planId = to.id;
+  });
+}
+
+// Neue Variante als Kopie des aktuellen Plans.
+export function addPlan(name) {
+  const copy = JSON.parse(JSON.stringify(app.data.timetable)).map((e) => ({ ...e, id: uid() }));
+  const plan = { id: uid(), name, entries: copy };
+  app.data.plans.push(plan);
+  switchPlan(plan.id);
+}
+
+export function deletePlan(id) {
+  if (app.data.plans.length < 2) return;
+  if (id === activePlan().id) switchPlan(app.data.plans.find((p) => p.id !== id).id);
+  app.data.plans = app.data.plans.filter((p) => p.id !== id);
 }
 
 // ---------- Tage ----------
 // Ein Tag ohne eigene Einträge zeigt den aktuellen Stundenplan.
-// Sobald du an einem Tag etwas notierst, werden seine Stunden für diesen Tag festgehalten,
-// damit spätere Änderungen am Stundenplan die Notizen nicht verschieben.
+// Sobald an einem Tag etwas notiert oder geändert wird, werden seine Stunden für diesen Tag festgehalten.
+
+export const lessonKey = (l) => l.entryId ?? l.id;
 
 function fromTimetable(date) {
   return entriesFor(weekday(date)).map((e) => ({
@@ -74,35 +108,74 @@ function fromTimetable(date) {
   }));
 }
 
+const hasText = (l) => !!l.note?.trim() || l.todos.length > 0;
+const dateBound = (l) => !!(l.extra || l.changed || l.cancelled); // gilt nur für genau diesen Tag
+const hasContent = (l) => hasText(l) || dateBound(l);
+const byPeriod = (a, b) => a.period - b.period;
+
 export function lessonsFor(date) {
-  return app.data.days[date]?.lessons ?? fromTimetable(date);
+  const day = app.data.days[date];
+  const free = !!freeDay(date);
+  if (!day) return free ? [] : fromTimetable(date);
+  return (free ? day.lessons.filter(hasContent) : [...day.lessons]).sort(byPeriod);
 }
 
 function freeze(date) {
-  if (!app.data.days[date]) app.data.days[date] = { lessons: fromTimetable(date) };
+  if (!app.data.days[date]) app.data.days[date] = { lessons: freeDay(date) ? [] : fromTimetable(date) };
   return app.data.days[date];
 }
 
-function lessonAt(date, index) {
-  return freeze(date).lessons[index];
+// Künftige Tage ohne Inhalt wieder freigeben, damit sie dem Stundenplan folgen.
+function tidy(date) {
+  const day = app.data.days[date];
+  if (day && date >= today() && !day.lessons.some(hasContent)) delete app.data.days[date];
 }
 
-export function setNote(date, index, text) {
-  lessonAt(date, index).note = text;
+const find = (date, key) => freeze(date).lessons.find((l) => lessonKey(l) === key);
+
+export function setNote(date, key, text) {
+  find(date, key).note = text;
+  tidy(date);
 }
 
-export function addTodo(date, index, text) {
-  lessonAt(date, index).todos.push({ id: uid(), text: text.trim(), done: false });
+export function addTodo(date, key, text) {
+  find(date, key).todos.push({ id: uid(), text: text.trim(), done: false });
 }
 
-export function toggleTodo(date, index, todoId) {
-  const t = lessonAt(date, index).todos.find((x) => x.id === todoId);
+export function toggleTodo(date, key, todoId) {
+  const t = find(date, key).todos.find((x) => x.id === todoId);
   t.done = !t.done;
 }
 
-export function removeTodo(date, index, todoId) {
-  const l = lessonAt(date, index);
+export function removeTodo(date, key, todoId) {
+  const l = find(date, key);
   l.todos = l.todos.filter((x) => x.id !== todoId);
+  tidy(date);
+}
+
+export function setCancelled(date, key, cancelled) {
+  find(date, key).cancelled = cancelled;
+  tidy(date);
+}
+
+// Änderung nur für diesen Tag (Raum, Stunde, Vertretungsklasse …).
+export function updateDayLesson(date, key, patch) {
+  const l = find(date, key);
+  const fields = ['period', 'length', 'classId', 'title', 'subject', 'room'];
+  if (!l.extra && fields.some((f) => f in patch && patch[f] !== l[f])) l.changed = true;
+  Object.assign(l, patch);
+  tidy(date);
+}
+
+// Zusätzliche Stunde nur an diesem Tag, z. B. eine Vertretung.
+export function addDayLesson(date, lesson) {
+  freeze(date).lessons.push({ id: uid(), extra: true, note: '', todos: [], ...lesson });
+}
+
+export function removeDayLesson(date, key) {
+  const day = freeze(date);
+  day.lessons = day.lessons.filter((l) => lessonKey(l) !== key);
+  tidy(date);
 }
 
 // Nicht erledigte To-dos aus vergangenen Tagen.
@@ -111,9 +184,115 @@ export function openFromEarlier() {
   const out = [];
   for (const [date, day] of Object.entries(app.data.days)) {
     if (date >= now) continue;
-    day.lessons.forEach((l, index) => {
-      for (const t of l.todos) if (!t.done) out.push({ date, index, lesson: l, todo: t });
-    });
+    for (const l of day.lessons) for (const t of l.todos) if (!t.done) out.push({ date, key: lessonKey(l), lesson: l, todo: t });
   }
   return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// ---------- Verlauf und Planung einer Klasse ----------
+
+// Alle Stunden einer Klasse zwischen zwei Daten (einschließlich).
+export function classLessons(classId, from, to) {
+  const out = [];
+  for (let d = from; d <= to; d = addDays(d, 1)) for (const l of lessonsFor(d)) if (l.classId === classId) out.push({ date: d, lesson: l });
+  return out;
+}
+
+// Letzte gehaltene Stunde der Klasse mit Eintrag, vor der angegebenen Stunde.
+export function previousLesson(classId, date, period) {
+  let best = null;
+  for (const [d, day] of Object.entries(app.data.days)) {
+    if (d > date) continue;
+    for (const l of day.lessons) {
+      if (l.classId !== classId || l.cancelled || !l.note?.trim()) continue;
+      if (d === date && l.period >= period) continue;
+      if (!best || d > best.date || (d === best.date && l.period > best.lesson.period)) best = { date: d, lesson: l };
+    }
+  }
+  return best;
+}
+
+// ---------- Planänderungen ----------
+// Ändert sich der Stundenplan (Eintrag, Variante, Ferien), wandern geplante Themen und To-dos mit:
+// was für die n-te kommende Stunde einer Klasse geplant war, bleibt bei der n-ten Stunde.
+// Heute und die Vergangenheit bleiben unverändert.
+
+const seqKey = (l) => l.classId || `titel:${l.title}`;
+
+function capturePlanned() {
+  const t = today();
+  const dates = Object.keys(app.data.days).filter((d) => d > t).sort();
+  const items = [];
+  if (!dates.length) return items;
+  const count = {};
+  for (let d = addDays(t, 1); d <= dates.at(-1); d = addDays(d, 1)) {
+    for (const l of lessonsFor(d)) {
+      if (dateBound(l)) continue;
+      const k = seqKey(l);
+      count[k] = (count[k] ?? 0) + 1;
+      if (hasText(l)) items.push({ k, n: count[k], date: d, lesson: l });
+    }
+  }
+  return JSON.parse(JSON.stringify(items));
+}
+
+function replan(items) {
+  const t = today();
+  // 1. Künftige Tage neu aus dem Stundenplan aufbauen; nur Tagesbezogenes bleibt stehen.
+  for (const date of Object.keys(app.data.days).filter((d) => d > t)) {
+    const bound = app.data.days[date].lessons.filter(dateBound);
+    if (!bound.length) {
+      delete app.data.days[date];
+      continue;
+    }
+    const fresh = freeDay(date) ? [] : fromTimetable(date);
+    const kept = [];
+    for (const b of bound) {
+      if (b.extra) {
+        kept.push(b);
+        continue;
+      }
+      const i = fresh.findIndex((f) => f.entryId === b.entryId);
+      const j = i >= 0 ? i : fresh.findIndex((f) => seqKey(f) === seqKey(b));
+      if (j >= 0) {
+        b.entryId = fresh[j].entryId;
+        fresh.splice(j, 1);
+        kept.push(b);
+      } else if (b.changed) kept.push({ ...b, extra: true });
+    }
+    app.data.days[date] = { lessons: [...kept, ...fresh] };
+    tidy(date);
+  }
+  if (!items.length) return;
+  // 2. Geplantes auf die n-te Stunde der Klasse im neuen Plan legen.
+  const open = new Map(items.map((it) => [`${it.k}#${it.n}`, it]));
+  const count = {};
+  for (let d = addDays(t, 1), i = 0; open.size && i < 500; d = addDays(d, 1), i++) {
+    for (const l of lessonsFor(d)) {
+      if (dateBound(l)) continue;
+      const k = seqKey(l);
+      count[k] = (count[k] ?? 0) + 1;
+      const it = open.get(`${k}#${count[k]}`);
+      if (!it) continue;
+      const target = find(d, lessonKey(l));
+      target.note = it.lesson.note;
+      target.todos = it.lesson.todos;
+      open.delete(`${k}#${count[k]}`);
+    }
+  }
+  // 3. Was keinen Platz mehr findet (Klasse hat keine Stunden mehr), bleibt am alten Tag sichtbar.
+  for (const it of open.values()) {
+    if (it.lesson.classId && !classOf(it.lesson.classId)) continue;
+    freeze(it.date).lessons.push({ ...it.lesson, id: uid(), entryId: undefined, extra: true, orphan: true });
+  }
+}
+
+export function planChange(fn) {
+  const items = capturePlanned();
+  fn();
+  replan(items);
+}
+
+export function saveHolidays(list) {
+  planChange(() => (app.data.holidays = list));
 }

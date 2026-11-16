@@ -1,57 +1,69 @@
 <script>
   import X from '@lucide/svelte/icons/x';
+  import Pencil from '@lucide/svelte/icons/pencil';
   import { app } from '../lib/store.svelte.js';
   import { selectClass } from '../lib/classes.js';
   import { autosize } from '../lib/autosize.js';
-  import { classOf, lessonName, periodLabel, timeRange, setNote, addTodo, toggleTodo, removeTodo } from '../lib/timetable.js';
+  import { fmtShort } from '../lib/dates.js';
+  import { classOf, lessonName, lessonKey, periodLabel, timeRange, setNote, addTodo, toggleTodo, removeTodo, previousLesson } from '../lib/timetable.js';
 
-  let { date, lesson, index } = $props();
+  let { date, lesson, onedit } = $props();
   let draft = $state('');
 
+  const key = $derived(lessonKey(lesson));
   const klass = $derived(classOf(lesson.classId));
+  const prev = $derived(lesson.classId ? previousLesson(lesson.classId, date, lesson.period) : null);
 
   function onTodoKey(e) {
     if (e.key === 'Enter' && draft.trim()) {
-      addTodo(date, index, draft);
+      addTodo(date, key, draft);
       draft = '';
     }
   }
 
-  function openOral() {
+  function open(page) {
     selectClass(lesson.classId);
-    app.page = 'muendlich';
+    app.page = page;
   }
 </script>
 
-<article style:--c={klass?.color ?? 'var(--line-strong)'}>
+<article style:--c={klass?.color ?? 'var(--line-strong)'} class:cancelled={lesson.cancelled}>
   <div class="time">
     <strong>{periodLabel(lesson.period, lesson.length)}</strong>
     <span>{timeRange(lesson.period, lesson.length)}</span>
   </div>
   <div class="body">
     <div class="head">
-      <strong>{lessonName(lesson)}</strong>
+      <strong class="name">{lessonName(lesson)}</strong>
       <span class="muted">{[lesson.subject, lesson.room].filter(Boolean).join(' · ')}</span>
-      {#if klass}<button class="link small oral" onclick={openOral}>Mündlich eintragen</button>{/if}
+      {#if lesson.cancelled}<span class="tag warn">entfällt</span>
+      {:else if lesson.orphan}<span class="tag warn">nicht mehr im Stundenplan</span>
+      {:else if lesson.extra}<span class="tag">nur an diesem Tag</span>
+      {:else if lesson.changed}<span class="tag">geändert</span>{/if}
+      <span class="links">
+        {#if klass && !lesson.cancelled}<button class="link small" onclick={() => open('muendlich')}>Mündlich</button>{/if}
+        <button class="edit" title="Nur für diesen Tag ändern" aria-label="Stunde an diesem Tag ändern" onclick={() => onedit(lesson)}><Pencil size={14} /></button>
+      </span>
     </div>
-    <textarea
-      rows="1"
-      placeholder="Kurzbeschreibung"
-      value={lesson.note}
-      oninput={(e) => setNote(date, index, e.currentTarget.value)}
-      use:autosize={lesson.note}
-    ></textarea>
-    {#if lesson.todos.length}
-      <ul>
-        {#each lesson.todos as t (t.id)}
-          <li class:done={t.done}>
-            <label><input type="checkbox" checked={t.done} onchange={() => toggleTodo(date, index, t.id)} /> <span>{t.text}</span></label>
-            <button class="rm" aria-label="To-do löschen" onclick={() => removeTodo(date, index, t.id)}><X size={14} /></button>
-          </li>
-        {/each}
-      </ul>
+    {#if !lesson.cancelled || lesson.note || lesson.todos.length}
+      <textarea rows="1" placeholder="Kurzbeschreibung" value={lesson.note} oninput={(e) => setNote(date, key, e.currentTarget.value)} use:autosize={lesson.note}></textarea>
+      {#if lesson.todos.length}
+        <ul>
+          {#each lesson.todos as t (t.id)}
+            <li class:done={t.done}>
+              <label><input type="checkbox" checked={t.done} onchange={() => toggleTodo(date, key, t.id)} /> <span>{t.text}</span></label>
+              <button class="rm" aria-label="To-do löschen" onclick={() => removeTodo(date, key, t.id)}><X size={14} /></button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+      <input class="add" type="text" placeholder="+ To-do" bind:value={draft} onkeydown={onTodoKey} />
     {/if}
-    <input class="add" type="text" placeholder="+ To-do" bind:value={draft} onkeydown={onTodoKey} />
+    {#if prev && !lesson.cancelled}
+      <button class="prev" title="Zum Stundenverlauf der Klasse" onclick={() => ((app.jump = { classTab: 'stunden' }), open('klasse'))}>
+        <span class="muted">Letzte Stunde ({fmtShort(prev.date)}):</span> {prev.lesson.note}
+      </button>
+    {/if}
   </div>
 </article>
 
@@ -63,6 +75,14 @@
     border-left: 4px solid var(--c);
     border-radius: var(--radius);
     background: #fff;
+  }
+  article.cancelled {
+    background: var(--bg-soft);
+    border-left-color: var(--line-strong);
+  }
+  article.cancelled .name {
+    text-decoration: line-through;
+    color: var(--muted);
   }
   .time {
     padding: 0.9rem 0.6rem 0.9rem 0.9rem;
@@ -87,11 +107,38 @@
     align-items: baseline;
     gap: 0.6rem;
   }
-  .head strong {
+  .name {
     font-size: 1.02rem;
   }
-  .oral {
+  .tag {
+    font-size: 0.76rem;
+    font-weight: 600;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: var(--bg-side);
+    color: var(--muted);
+  }
+  .tag.warn {
+    background: var(--warn-soft);
+    color: var(--warn);
+  }
+  .links {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .edit {
+    border: none;
+    background: none;
+    color: var(--muted);
+    padding: 0.2rem;
+    border-radius: 5px;
+    display: flex;
+  }
+  .edit:hover {
+    background: var(--bg-side);
+    color: var(--text);
   }
   textarea {
     border: 1px solid transparent;
@@ -146,5 +193,19 @@
   }
   .add:focus {
     color: var(--text);
+  }
+  .prev {
+    border: none;
+    background: none;
+    padding: 0 0.6rem;
+    text-align: left;
+    font-size: 0.86rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .prev:hover {
+    text-decoration: underline;
   }
 </style>

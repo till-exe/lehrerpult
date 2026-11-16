@@ -1,11 +1,24 @@
 <script>
   import Lock from '@lucide/svelte/icons/lock';
-  import { app, lockApp } from '../lib/store.svelte.js';
+  import Undo2 from '@lucide/svelte/icons/undo-2';
+  import { app, lockApp, undo } from '../lib/store.svelte.js';
+  import Search from './Search.svelte';
+
+  // Strg+Z macht die letzte Änderung rückgängig, außer beim Tippen in einem Textfeld.
+  function onKey(e) {
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z' || e.shiftKey) return;
+    if (e.target.closest?.('input, textarea, select')) return;
+    e.preventDefault();
+    undo();
+  }
   import { PAGES, SETTINGS_PAGE } from '../lib/pages.js';
 </script>
 
+<svelte:window onkeydown={onKey} />
+
 <nav>
   <div class="brand">Lehrerpult</div>
+  <Search />
 
   <ul>
     {#each PAGES as p (p.id)}
@@ -22,6 +35,10 @@
     <button class:active={app.page === SETTINGS_PAGE.id} onclick={() => (app.page = SETTINGS_PAGE.id)}>
       <SETTINGS_PAGE.icon size={18} strokeWidth={1.75} />
       {SETTINGS_PAGE.label}
+    </button>
+    <button onclick={undo} disabled={app.undoCount === 0} title="Letzte Änderung rückgängig machen (Strg+Z)">
+      <Undo2 size={18} strokeWidth={1.75} />
+      Rückgängig
     </button>
     <button onclick={lockApp}>
       <Lock size={18} strokeWidth={1.75} />
@@ -51,7 +68,7 @@
   .brand {
     font-weight: 650;
     font-size: 1.12rem;
-    padding: 0 0.7rem 1.3rem;
+    padding: 0 0.7rem 0.9rem;
     letter-spacing: -0.01em;
   }
   ul {
@@ -80,6 +97,11 @@
   }
   button:hover {
     background: #eaece8;
+  }
+  button:disabled {
+    opacity: 0.4;
+    background: transparent;
+    cursor: default;
   }
   button.active {
     background: var(--accent-soft);

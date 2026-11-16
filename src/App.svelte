@@ -66,7 +66,7 @@
     <main>
       {#if VIEWS[app.page]}
         {@const View = VIEWS[app.page]}
-        <View />
+        {#key app.navKey}<View />{/key}
       {/if}
     </main>
   </div>

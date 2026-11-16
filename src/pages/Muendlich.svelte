@@ -8,6 +8,8 @@
   import ClassPicker from '../components/ClassPicker.svelte';
   import OralDialog from '../components/OralDialog.svelte';
   import Modal from '../components/Modal.svelte';
+  import TransferDialog from '../components/TransferDialog.svelte';
+  import ListChecks from '@lucide/svelte/icons/list-checks';
 
   let dialog = $state(null);
   let onlyOpen = $state(false);
@@ -39,7 +41,10 @@
   <div class="toolbar">
     <label class="check"><input type="checkbox" bind:checked={onlyOpen} /> Nur nicht übertragene zeigen</label>
     {#if open}
+      <span class="tb">
+      <button class="btn primary" onclick={() => (dialog = { kind: 'transfer' })}><ListChecks size={17} /> Übertragen …</button>
       <button class="btn" onclick={() => (dialog = { kind: 'all' })}><Check size={17} /> Alle als übertragen markieren</button>
+      </span>
     {/if}
   </div>
 
@@ -80,6 +85,8 @@
 
 {#if dialog?.kind === 'entry'}
   <OralDialog student={dialog.student} entry={dialog.entry ?? null} onclose={() => (dialog = null)} />
+{:else if dialog?.kind === 'transfer'}
+  <TransferDialog {klass} onclose={() => (dialog = null)} />
 {:else if dialog?.kind === 'all'}
   <Modal title="Alle als übertragen markieren?" onclose={() => (dialog = null)}>
     <p class="muted">Alle {open} offenen Einträge der Klasse {klass.name} werden als in den Notenmanager übertragen markiert.</p>
@@ -113,6 +120,10 @@
     margin-bottom: 0.8rem;
     max-width: 1000px;
     min-height: 2.4rem;
+  }
+  .tb {
+    display: flex;
+    gap: 0.5rem;
   }
   .check {
     display: flex;
