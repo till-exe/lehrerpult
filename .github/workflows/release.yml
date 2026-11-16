@@ -20,7 +20,8 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          if gh release view "v$version" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          # Veröffentlicht ist eine Version erst, wenn die Update-Beschreibung latest.yml vorliegt.
+          if gh release view "v$version" -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' 2>/dev/null | grep -qx latest.yml; then
             echo "new=false" >> "$GITHUB_OUTPUT"
           else
             echo "new=true" >> "$GITHUB_OUTPUT"
@@ -34,4 +35,13 @@ jobs:
       - if: steps.v.outputs.new == 'true'
         run: npx vite build
       - if: steps.v.outputs.new == 'true'
-        run: npx electron-builder --win nsis --x64 --publish always
+        run: npx electron-builder --win nsis --x64 --publish never
+      - name: Veröffentlichen
+        if: steps.v.outputs.new == 'true'
+        shell: bash
+        run: |
+          tag="v${{ steps.v.outputs.version }}"
+          if ! gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Lehrerpult ${{ steps.v.outputs.version }}" --notes ""
+          fi
+          gh release upload "$tag" -R "$GITHUB_REPOSITORY" --clobber release/*.exe release/*.blockmap release/latest.yml
