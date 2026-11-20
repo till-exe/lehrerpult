@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { api } from './lib/api.js';
   import { app, load, changed, flush, lockApp } from './lib/store.svelte.js';
+  import { timer } from './lib/timer.svelte.js';
   import Sidebar from './components/Sidebar.svelte';
   import Setup from './screens/Setup.svelte';
   import Lock from './screens/Lock.svelte';
@@ -48,7 +49,7 @@
   onMount(() => {
     const id = setInterval(() => {
       const minutes = app.config?.idleMinutes ?? 0;
-      if (minutes > 0 && app.phase === 'ready' && Date.now() - lastActivity > minutes * 60000) lockApp();
+      if (minutes > 0 && app.phase === 'ready' && !timer.running && Date.now() - lastActivity > minutes * 60000) lockApp();
     }, 15000);
     return () => clearInterval(id);
   });

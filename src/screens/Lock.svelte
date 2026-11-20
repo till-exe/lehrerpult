@@ -2,6 +2,7 @@
   import AuthLayout from './AuthLayout.svelte';
   import { api } from '../lib/api.js';
   import { load } from '../lib/store.svelte.js';
+  import { timer, mmss } from '../lib/timer.svelte.js';
 
   let mode = $state('unlock'); // unlock | recover
   let pw = $state('');
@@ -39,6 +40,9 @@
 <AuthLayout>
   {#if mode === 'unlock'}
     <h1>Gesperrt</h1>
+    {#if timer.running || timer.finished}
+      <p class="timer">{timer.finished ? 'Timer: Zeit ist um' : `Timer läuft: ${timer.mode === 'stoppuhr' ? mmss(timer.elapsed) : mmss(timer.remaining)}`}</p>
+    {/if}
     <form onsubmit={unlock}>
       <label class="field">Passwort<input type="password" bind:value={pw} use:autofocus autocomplete="current-password" /></label>
       {#if error}<p class="error">{error}</p>{/if}
@@ -62,6 +66,14 @@
 </AuthLayout>
 
 <style>
+  .timer {
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
   form {
     display: grid;
     gap: 0.9rem;

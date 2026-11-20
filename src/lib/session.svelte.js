@@ -1,6 +1,7 @@
 // Zustand, der nur während der laufenden Sitzung gilt (nicht gespeichert).
 export const session = $state({
   absent: {}, // studentId → true
+  folded: {}, // Stundenkarten auf der Startseite: "Datum|Stunde" → eingeklappt ja/nein
 });
 
 export const isPresent = (s) => !session.absent[s.id];

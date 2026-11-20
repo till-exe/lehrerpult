@@ -1,6 +1,9 @@
 <script>
   import X from '@lucide/svelte/icons/x';
   import Pencil from '@lucide/svelte/icons/pencil';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronUp from '@lucide/svelte/icons/chevron-up';
+  import { session } from '../lib/session.svelte.js';
   import { app } from '../lib/store.svelte.js';
   import { selectClass } from '../lib/classes.js';
   import { autosize } from '../lib/autosize.js';
@@ -15,6 +18,11 @@
   const key = $derived(lessonKey(lesson));
   const klass = $derived(classOf(lesson.classId));
   const prev = $derived(lesson.classId ? previousLesson(lesson.classId, date, lesson.period) : null);
+
+  // Eingeklappt zeigt die Karte nur Kopfzeile und Kurzbeschreibung.
+  const foldKey = $derived(`${date}|${key}`);
+  const folded = $derived(session.folded[foldKey] ?? !!app.data.settings.lessonsFolded);
+  const openTodos = $derived(lesson.todos.filter((t) => !t.done).length);
 
   function onTodoKey(e) {
     if (e.key === 'Enter' && draft.trim()) {
@@ -46,9 +54,19 @@
       <span class="links">
         {#if klass && !lesson.cancelled}<button class="link small" onclick={() => open('muendlich')}>Mündlich</button>{/if}
         <button class="edit" title="Nur für diesen Tag ändern" aria-label="Stunde an diesem Tag ändern" onclick={() => onedit(lesson)}><Pencil size={14} /></button>
+        <button class="edit" title={folded ? 'Ausklappen' : 'Einklappen'} aria-label={folded ? 'Stunde ausklappen' : 'Stunde einklappen'} aria-expanded={!folded} onclick={() => (session.folded[foldKey] = !folded)}>
+          {#if folded}<ChevronDown size={16} />{:else}<ChevronUp size={16} />{/if}
+        </button>
       </span>
     </div>
-    {#if !lesson.cancelled || lesson.note || lesson.todos.length}
+    {#if folded}
+      {#if lesson.note?.trim() || openTodos}
+        <p class="short">
+          {#if lesson.note?.trim()}<span class="text">{lesson.note.split('\n')[0]}</span>{/if}
+          {#if openTodos}<span class="todocount">{openTodos} {openTodos === 1 ? 'To-do' : 'To-dos'} offen</span>{/if}
+        </p>
+      {/if}
+    {:else if !lesson.cancelled || lesson.note || lesson.todos.length}
       <textarea rows="1" placeholder="Kurzbeschreibung" value={lesson.note} oninput={(e) => setNote(date, key, e.currentTarget.value)} use:autosize={lesson.note}></textarea>
       {#if lesson.todos.length}
         <ul>
@@ -62,7 +80,7 @@
       {/if}
       <input class="add" type="text" placeholder="+ To-do" bind:value={draft} onkeydown={onTodoKey} />
     {/if}
-    {#if prev && !lesson.cancelled}
+    {#if prev && !lesson.cancelled && !folded}
       <button class="prev" title="Zum Stundenverlauf der Klasse" onclick={() => ((app.jump = { classTab: 'stunden' }), open('klasse'))}>
         <span class="muted">Letzte Stunde ({fmtShort(prev.date)}):</span> {prev.lesson.note}
       </button>
@@ -146,6 +164,22 @@
   .edit:hover {
     background: var(--bg-side);
     color: var(--text);
+  }
+  .short {
+    display: flex;
+    gap: 0.8rem;
+    align-items: baseline;
+    min-width: 0;
+  }
+  .short .text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .todocount {
+    flex: none;
+    font-size: 0.85rem;
+    color: var(--warn);
   }
   textarea {
     border: 1px solid transparent;

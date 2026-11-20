@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, powerMonitor, safeStorage, dialog, shell, Menu, session } = require('electron');
+const { app, BrowserWindow, ipcMain, powerMonitor, powerSaveBlocker, safeStorage, dialog, shell, Menu, session } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { Vault, writeAtomic } = require('./vault.cjs');
@@ -180,6 +180,17 @@ handle('app:ready-to-close', () => {
   closeConfirmed = true;
   if (vault.unlocked) runBackup();
   win?.close();
+  return { ok: true };
+});
+
+// ---------- Bildschirm wach halten, solange ein Timer läuft ----------
+let awakeId = null;
+handle('power:keep-awake', (on) => {
+  if (on && awakeId === null) awakeId = powerSaveBlocker.start('prevent-display-sleep');
+  if (!on && awakeId !== null) {
+    powerSaveBlocker.stop(awakeId);
+    awakeId = null;
+  }
   return { ok: true };
 });
 

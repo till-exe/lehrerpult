@@ -3,24 +3,11 @@
   import Pause from '@lucide/svelte/icons/pause';
   import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
   import X from '@lucide/svelte/icons/x';
-  import { onDestroy } from 'svelte';
   import { app } from '../../lib/store.svelte.js';
   import Stage from './Stage.svelte';
-  import { chime } from '../../lib/session.svelte.js';
+  import { timer, mmss, set, start, stop, reset, loadPhase, switchMode } from '../../lib/timer.svelte.js';
 
   const PRESETS = [1, 2, 3, 5, 10, 15, 20];
-
-  let mode = $state('timer'); // timer | phasen | stoppuhr
-  let sound = $state(true);
-  let running = $state(false);
-  let finished = $state(false);
-  let tick = null;
-
-  // Timer und Phasen zählen herunter
-  let total = $state(5 * 60);
-  let remaining = $state(5 * 60);
-  let endAt = 0;
-  let phaseIndex = $state(0);
 
   // Phasen werden gespeichert, z. B. Einzelarbeit → Partnerarbeit → Plenum.
   if (!app.data.settings.timerPhases)
@@ -29,138 +16,86 @@
       { name: 'Partnerarbeit', minutes: 10 },
     ];
   const phases = $derived(app.data.settings.timerPhases);
-  const phase = $derived(mode === 'phasen' ? phases[phaseIndex] : null);
-  const nextPhase = $derived(mode === 'phasen' ? phases[phaseIndex + 1] : null);
+  const phase = $derived(timer.mode === 'phasen' ? timer.phases[timer.phaseIndex] : null);
+  const nextPhase = $derived(timer.mode === 'phasen' ? timer.phases[timer.phaseIndex + 1] : null);
+  const progress = $derived(timer.total ? timer.remaining / timer.total : 0);
+  if (timer.mode === 'phasen' && !timer.running && !timer.phases.length) loadPhase(0);
 
-  // Stoppuhr zählt hoch
-  let elapsed = $state(0);
-  let startedAt = 0;
-
-  const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-  const progress = $derived(total ? remaining / total : 0);
-
-  function stop() {
-    clearInterval(tick);
-    running = false;
+  // Eigene Zeit, z. B. 45 Min für eine Schulaufgabe
+  let ownMin = $state('');
+  let ownSec = $state('');
+  function setOwn(e) {
+    e.preventDefault();
+    const secs = (Number(ownMin) || 0) * 60 + (Number(ownSec) || 0);
+    if (secs > 0) set(secs);
   }
-
-  function set(seconds) {
-    stop();
-    total = remaining = Math.max(0, seconds);
-    finished = false;
-  }
-
-  function loadPhase(i) {
-    phaseIndex = i;
-    set((phases[i]?.minutes ?? 0) * 60);
-  }
-
-  function switchMode(m) {
-    stop();
-    mode = m;
-    finished = false;
-    if (m === 'phasen') loadPhase(0);
-    if (m === 'timer') set(5 * 60);
-    if (m === 'stoppuhr') elapsed = 0;
-  }
-
-  function start() {
-    finished = false;
-    if (mode === 'stoppuhr') {
-      startedAt = Date.now() - elapsed * 1000;
-      running = true;
-      tick = setInterval(() => (elapsed = (Date.now() - startedAt) / 1000), 100);
-      return;
-    }
-    if (remaining <= 0) return;
-    endAt = Date.now() + remaining * 1000;
-    running = true;
-    tick = setInterval(update, 200);
-  }
-
-  function update() {
-    remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-    if (remaining > 0) return;
-    stop();
-    if (mode === 'phasen' && phaseIndex < phases.length - 1) {
-      if (sound) chime(2);
-      loadPhase(phaseIndex + 1);
-      start();
-    } else {
-      finished = true;
-      if (sound) chime();
-    }
-  }
-
-  function reset() {
-    if (mode === 'stoppuhr') {
-      stop();
-      elapsed = 0;
-    } else if (mode === 'phasen') loadPhase(0);
-    else set(total);
-  }
-
-  onDestroy(stop);
 </script>
 
 <div class="seg">
-  <button class:on={mode === 'timer'} onclick={() => switchMode('timer')}>Timer</button>
-  <button class:on={mode === 'phasen'} onclick={() => switchMode('phasen')}>Phasen</button>
-  <button class:on={mode === 'stoppuhr'} onclick={() => switchMode('stoppuhr')}>Stoppuhr</button>
+  <button class:on={timer.mode === 'timer'} disabled={timer.running} onclick={() => switchMode('timer')}>Timer</button>
+  <button class:on={timer.mode === 'phasen'} disabled={timer.running} onclick={() => switchMode('phasen')}>Phasen</button>
+  <button class:on={timer.mode === 'stoppuhr'} disabled={timer.running} onclick={() => switchMode('stoppuhr')}>Stoppuhr</button>
 </div>
 
-{#if mode === 'phasen'}
+{#if timer.mode === 'phasen'}
   <div class="phases">
     {#each phases as p, i}
-      <div class="phase" class:current={i === phaseIndex}>
+      <div class="phase" class:current={i === timer.phaseIndex}>
         <span class="nr">{i + 1}.</span>
         <input type="text" aria-label="Name der Phase" bind:value={p.name} />
-        <input type="number" min="1" max="180" aria-label="Minuten" bind:value={p.minutes} onchange={() => !running && i === phaseIndex && loadPhase(i)} />
+        <input type="number" min="1" max="180" aria-label="Minuten" bind:value={p.minutes} onchange={() => !timer.running && i === timer.phaseIndex && loadPhase(i)} />
         <span class="muted">Min</span>
-        <button class="btn ghost icon" aria-label="Phase entfernen" disabled={running || phases.length <= 1} onclick={() => (phases.splice(i, 1), loadPhase(0))}><X size={15} /></button>
+        <button class="btn ghost icon" aria-label="Phase entfernen" disabled={timer.running || phases.length <= 1} onclick={() => (phases.splice(i, 1), loadPhase(0))}><X size={15} /></button>
       </div>
     {/each}
-    <button class="link small" disabled={running} onclick={() => phases.push({ name: '', minutes: 5 })}>Phase hinzufügen</button>
+    <button class="link small" disabled={timer.running} onclick={() => phases.push({ name: '', minutes: 5 })}>Phase hinzufügen</button>
   </div>
 {/if}
 
 <Stage>
-  {#if mode === 'timer'}
+  {#if timer.mode === 'timer'}
     <div class="presets">
       {#each PRESETS as m}
-        <button class="btn" onclick={() => set(m * 60)}>{m} Min</button>
+        <button class="btn" disabled={timer.running} onclick={() => set(m * 60)}>{m} Min</button>
       {/each}
+      <form class="own" onsubmit={setOwn}>
+        <input type="number" min="0" max="600" aria-label="Minuten" bind:value={ownMin} disabled={timer.running} />
+        <span class="muted">Min</span>
+        <input type="number" min="0" max="59" aria-label="Sekunden" bind:value={ownSec} disabled={timer.running} />
+        <span class="muted">Sek</span>
+        <button class="btn" disabled={timer.running || (!Number(ownMin) && !Number(ownSec))}>Setzen</button>
+      </form>
     </div>
-  {:else if mode === 'phasen'}
-    <div class="phasename">{finished ? '' : phase?.name || `Phase ${phaseIndex + 1}`}</div>
+  {:else if timer.mode === 'phasen'}
+    <div class="phasename">{timer.finished ? '' : phase?.name || `Phase ${timer.phaseIndex + 1}`}</div>
   {/if}
 
   <div class="adjust">
-    {#if mode === 'timer'}<button class="btn ghost" disabled={running} onclick={() => set(remaining - 60)}>− 1 Min</button>{/if}
-    <div class="time" class:finished>
-      {#if mode === 'stoppuhr'}{mmss(elapsed)}<span class="tenth">,{Math.floor((elapsed * 10) % 10)}</span>
-      {:else}{finished ? 'Zeit ist um' : mmss(remaining)}{/if}
+    {#if timer.mode === 'timer'}<button class="btn ghost" disabled={timer.running} onclick={() => set(timer.remaining - 60)}>− 1 Min</button>{/if}
+    <div class="time" class:finished={timer.finished}>
+      {#if timer.mode === 'stoppuhr'}{mmss(timer.elapsed)}<span class="tenth">,{Math.floor((timer.elapsed * 10) % 10)}</span>
+      {:else}{timer.finished ? 'Zeit ist um' : mmss(timer.remaining)}{/if}
     </div>
-    {#if mode === 'timer'}<button class="btn ghost" disabled={running} onclick={() => set(remaining + 60)}>+ 1 Min</button>{/if}
+    {#if timer.mode === 'timer'}<button class="btn ghost" disabled={timer.running} onclick={() => set(timer.remaining + 60)}>+ 1 Min</button>{/if}
   </div>
 
-  {#if mode !== 'stoppuhr'}
+  {#if timer.mode !== 'stoppuhr'}
     <div class="bar"><div style:width="{progress * 100}%"></div></div>
   {/if}
-  {#if mode === 'phasen' && !finished}
-    <p class="muted next">{nextPhase ? `Danach: ${nextPhase.name || 'Phase ' + (phaseIndex + 2)} (${nextPhase.minutes} Min)` : 'Letzte Phase'}</p>
+  {#if timer.mode === 'phasen' && !timer.finished}
+    <p class="muted next">{nextPhase ? `Danach: ${nextPhase.name || 'Phase ' + (timer.phaseIndex + 2)} (${nextPhase.minutes} Min)` : 'Letzte Phase'}</p>
   {/if}
 
   <div class="controls">
-    {#if running}
+    {#if timer.running}
       <button class="btn primary big" onclick={stop}><Pause size={20} /> Pause</button>
     {:else}
-      <button class="btn primary big" disabled={mode !== 'stoppuhr' && remaining === 0} onclick={start}><Play size={20} /> Start</button>
+      <button class="btn primary big" disabled={timer.mode !== 'stoppuhr' && timer.remaining === 0} onclick={start}><Play size={20} /> Start</button>
     {/if}
     <button class="btn big" onclick={reset}><RotateCcw size={18} /> Zurücksetzen</button>
   </div>
-  {#if mode !== 'stoppuhr'}
-    <label class="sound"><input type="checkbox" bind:checked={sound} /> Signalton {mode === 'phasen' ? 'beim Wechsel und am Ende' : 'am Ende'}</label>
+  {#if timer.mode !== 'stoppuhr'}
+    <label class="sound"><input type="checkbox" bind:checked={timer.sound} /> Signalton {timer.mode === 'phasen' ? 'beim Wechsel und am Ende' : 'am Ende'}</label>
   {/if}
 </Stage>
 
@@ -214,6 +149,21 @@
   .nr {
     color: var(--muted);
     text-align: right;
+  }
+  .own {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: 0.8rem;
+    padding-left: 0.8rem;
+    border-left: 1px solid var(--line);
+  }
+  .own input {
+    width: 4.2rem;
+    padding: 0.45rem 0.4rem;
+    font: inherit;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
   }
   .presets,
   .controls,

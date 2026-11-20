@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('lehrerpult', {
   chooseExtraBackupDir: call('backups:choose-extra-dir'),
   openFolder: call('folders:open'),
   readyToClose: call('app:ready-to-close'),
+  keepAwake: call('power:keep-awake'),
   checkUpdate: call('update:check'),
   downloadUpdate: call('update:download'),
   installUpdate: call('update:install'),

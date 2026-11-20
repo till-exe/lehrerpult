@@ -30,6 +30,7 @@ function mockApi() {
     chooseExtraBackupDir: () => ((config = { ...config, extraBackupDir: 'E:\\Lehrerpult-Sicherung' }), ok({ config })),
     openFolder: () => ok(),
     readyToClose: () => ok(),
+    keepAwake: () => ok(),
     checkUpdate: () => ok({ current: 'Vorschau', latest: '0.8.0', available: true }),
     downloadUpdate: () => new Promise((r) => setTimeout(() => r({ ok: true }), 800)),
     installUpdate: () => ok(),

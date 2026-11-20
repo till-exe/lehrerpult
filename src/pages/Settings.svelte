@@ -186,6 +186,14 @@
       </select>
     </label>
 
+    <label class="field inline">
+      Stunden auf der Startseite
+      <select value={app.data.settings.lessonsFolded ? 'zu' : 'auf'} onchange={(e) => (app.data.settings.lessonsFolded = e.currentTarget.value === 'zu')}>
+        <option value="auf">ausgeklappt (Kurzbeschreibung, To-dos, letzte Stunde)</option>
+        <option value="zu">eingeklappt (nur Kurzbeschreibung)</option>
+      </select>
+    </label>
+
     <div class="extra">
       <div>
         <h3>Updates</h3>
